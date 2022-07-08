@@ -23,7 +23,7 @@ android {
         }
         debug {
             // turn these on for smaller APK, but slower build
-            minifyEnabled true
+            //minifyEnabled true
             //shrinkResources true
             //proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }

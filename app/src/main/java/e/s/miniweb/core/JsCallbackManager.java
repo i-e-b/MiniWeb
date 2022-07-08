@@ -1,4 +1,4 @@
-package e.s.miniweb;
+package e.s.miniweb.core;
 
 import android.webkit.JavascriptInterface;
 
@@ -14,5 +14,10 @@ public class JsCallbackManager {
     @JavascriptInterface
     public void homepageLoaded() {
         mainActivity.HomepageLoaded();
+    }
+
+    @JavascriptInterface
+    public void showTitle(String message) {
+        mainActivity.PopupTitle(message);
     }
 }

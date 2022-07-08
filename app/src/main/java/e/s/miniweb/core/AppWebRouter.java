@@ -1,4 +1,4 @@
-package e.s.miniweb;
+package e.s.miniweb.core;
 
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -9,7 +9,20 @@ import android.webkit.WebViewClient;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import e.s.miniweb.ControllerBindings;
+import e.s.miniweb.template.TemplateEngine;
+import e.s.miniweb.template.TemplateResponse;
+
 public class AppWebRouter extends WebViewClient {
+    final private TemplateEngine template;
+
+    public AppWebRouter(){
+        template = new TemplateEngine();
+
+        // Prepare all the controllers for everything
+        ControllerBindings.BindAllControllers();
+    }
+
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         // We return value true if we want to do anything OTHER than navigation
@@ -27,9 +40,11 @@ public class AppWebRouter extends WebViewClient {
 
         String isApp = request.getUrl().getScheme();
         String controller = request.getUrl().getHost();
-        String method = request.getUrl().getPath();
+        String method = request.getUrl().getPath().substring(1);
         String params = request.getUrl().getQuery();
 
+        TemplateResponse response = template.Run(controller, method, params, request);
+        System.out.println(response.TemplateName);
 
         // spit out a generic page for any request.
         String pageString = "<html>" +
@@ -45,8 +60,10 @@ public class AppWebRouter extends WebViewClient {
                 "<li><a href=\"app://first/method?p1=x&p2=y\">Test one</a></li>"+
                 "<li><a href=\"app://second/otherMethod?p1=a&p2=b\">Test two</a></li>"+
                 "<li><a href=\"app://home\">Home</a></li>"+
-                "<li><a href=\"javascript:manager.homepageLoaded()\">Callback</a></li>"+
-                "<li><a href=\"javascript:alert('hello')\">Native</a></li>"+
+                "<li><a href=\"javascript:manager.showTitle('Bold message')\">Run Android code</a></li>"+
+                "<li><a href=\"javascript:alert('hello')\">Show alert as toast message</a></li>"+
+                // fill up some space
+                "<li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li>" +
                 "</ul>" +
                 "<script type=\"text/javascript\">manager.homepageLoaded();</script>"+ // signal we're ready
                 "</body></html>";
