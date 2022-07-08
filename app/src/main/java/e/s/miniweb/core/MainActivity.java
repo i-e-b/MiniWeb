@@ -44,7 +44,7 @@ public class MainActivity extends Activity {
         }*/
 
         // hook the view to the app client and request the home page
-        client = new AppWebRouter();
+        client = new AppWebRouter(getAssets());
         manager = new JsCallbackManager(this);
 
         // Call out to the homepage
@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
             view.setWebViewClient(client);
             view.addJavascriptInterface(manager, "manager");
             // send the view to home page, with a special flag to say this is the first page since app start.
-            view.loadUrl("app://home/init?first=true"); // we can play fast-and-loose with the url structure.
+            view.loadUrl("app://home"); // we can play fast-and-loose with the url structure.
         });
     }
 

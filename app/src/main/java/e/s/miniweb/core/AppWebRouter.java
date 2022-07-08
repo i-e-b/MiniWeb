@@ -1,5 +1,7 @@
 package e.s.miniweb.core;
 
+import android.content.res.AssetManager;
+import android.content.res.Resources;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -16,8 +18,8 @@ import e.s.miniweb.template.TemplateResponse;
 public class AppWebRouter extends WebViewClient {
     final private TemplateEngine template;
 
-    public AppWebRouter(){
-        template = new TemplateEngine();
+    public AppWebRouter(AssetManager resources){
+        template = new TemplateEngine(resources);
 
         // Prepare all the controllers for everything
         ControllerBindings.BindAllControllers();
@@ -38,17 +40,20 @@ public class AppWebRouter extends WebViewClient {
         // If we return a proper WebResourceResponse, the web view will render that.
         // We could check for a https://*.mysite.com url for going outside etc.
 
-        String isApp = request.getUrl().getScheme();
+        String isApp = request.getUrl().getScheme(); // can use to direct out
         String controller = request.getUrl().getHost();
-        String method = request.getUrl().getPath().substring(1);
+        String method = request.getUrl().getPath();
+        if (method == null) method = "";
+        if (method.startsWith("p")) method = method.substring(1);
+        if (method.equals("")) method = "index";
         String params = request.getUrl().getQuery();
 
-        TemplateResponse response = template.Run(controller, method, params, request);
-        System.out.println(response.TemplateName);
+        String response = template.Run(controller, method, params, request);
 
         // spit out a generic page for any request.
         String pageString = "<html>" +
-                "<body><h1>Router</h1>" +
+                "<body>" + response + "<script type=\"text/javascript\">manager.homepageLoaded();</script></body></html>";
+                /*"<h1>Router</h1>" +
                 "<p>This is a sample response from the router. With all sorts of stuff.</p>" +
                 "<dl>" +
                 "<dt>target type</dt><dd>"+isApp+"</dd>"+
@@ -64,9 +69,7 @@ public class AppWebRouter extends WebViewClient {
                 "<li><a href=\"javascript:alert('hello')\">Show alert as toast message</a></li>"+
                 // fill up some space
                 "<li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li><li></li>" +
-                "</ul>" +
-                "<script type=\"text/javascript\">manager.homepageLoaded();</script>"+ // signal we're ready
-                "</body></html>";
+                "</ul>" +*/
 
         /*try {
             Thread.sleep(5000); // fake loading
