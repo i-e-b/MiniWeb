@@ -20,6 +20,7 @@ public class MainActivity extends Activity {
     private WebView view;
     private AppWebRouter client;
     private JsCallbackManager manager;
+    private long lastPress; // controlls double-back-to-exit timing
 
     // Do start-up of the app
     @SuppressLint("SetJavaScriptEnabled")
@@ -52,15 +53,17 @@ public class MainActivity extends Activity {
     // Otherwise we send it down to the web view
     @Override
     public void onBackPressed() {
-        if (Objects.equals(client.getLastRequest(), "app://home")){
-            super.onBackPressed();
-            return;
-        }
-
-        if (view.canGoBack()) { // probably not on home page
+        if (view.canGoBack()) { // have history. Go back
             view.goBack();
-        } else {
-            super.onBackPressed();
+        } else { // No browser history...
+            long pressTime = System.currentTimeMillis();
+
+            if (Math.abs(pressTime - lastPress) > 2500){ // last press was more that 2.5 seconds ago. Ignore
+                Toast.makeText(getApplicationContext(), "Press again to leave", Toast.LENGTH_SHORT).show();
+                lastPress = pressTime;
+            } else { // last press was within 2.5 seconds. Pass to activity (usually does a soft exit)
+                super.onBackPressed();
+            }
         }
     }
 
@@ -69,7 +72,7 @@ public class MainActivity extends Activity {
 
     // Show a message as a small 'toast' alert (subtle)
     public void showToast(String message) {
-        Toast.makeText(getApplicationContext(),message,Toast.LENGTH_LONG).show();
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
     }
 
     private void hideTitle(){

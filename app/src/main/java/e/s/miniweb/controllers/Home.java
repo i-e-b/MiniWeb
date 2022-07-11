@@ -2,7 +2,9 @@ package e.s.miniweb.controllers;
 
 import android.webkit.WebResourceRequest;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
@@ -26,12 +28,23 @@ public class Home extends ControllerBase {
      * "home/index" is the special landing page (feel free to use the url "app://home" anywhere)
      */
     public TemplateResponse index(Map<String, String> parameters, WebResourceRequest request) {
+        List<ExampleObject> list = new ArrayList<>();
+        list.add(new ExampleObject("hello"));
+        list.add(new ExampleObject("this"));
+        list.add(new ExampleObject("is"));
+        list.add(new ExampleObject("a"));
+        list.add(new ExampleObject("list"));
+
         Object model = new Object() {
             public final String an = "an";
             public final String multiple = "multiple";
             public final String s = "s";
             public final String line = "line";
             public final String controller = "Home";
+            public final boolean falseValue = false;
+            public final boolean trueValue = true;
+            public final Object nullValue = null;
+            public final List<ExampleObject> listThing = list;
         };
 
         return Page("home/index", model);
@@ -65,4 +78,11 @@ public class Home extends ControllerBase {
     }
 
 
+    private class ExampleObject {
+        public String exampleField;
+
+        public ExampleObject(String msg) {
+            exampleField = msg;
+        }
+    }
 }
