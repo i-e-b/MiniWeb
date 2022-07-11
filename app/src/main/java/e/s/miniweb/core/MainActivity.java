@@ -10,6 +10,8 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import java.util.Objects;
+
 import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.controllers.Home;
 import e.s.miniweb.template.TemplateEngine;
@@ -19,21 +21,7 @@ public class MainActivity extends Activity {
     private AppWebRouter client;
     private JsCallbackManager manager;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        this.setTitle("Loading..."); // temp message as soon as possible
-
-        // setup the web view
-        view = new WebView(this);
-        this.setContentView(view, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT));
-
-        // Do any heavy lifting out on a non-ui thread, so
-        // the 'loading' message gets a chance to update
-        new Thread(this::loadWebViewWithLocalClient).start();
-    }
-
+    // Do start-up of the app
     @SuppressLint("SetJavaScriptEnabled")
     public void loadWebViewWithLocalClient() {
         // We're off the ui thread, so can do any start-up processes here...
@@ -44,10 +32,10 @@ public class MainActivity extends Activity {
         }*/
 
         // hook the view to the app client and request the home page
-        client = new AppWebRouter(getAssets());
-        manager = new JsCallbackManager(this);
+        client = new AppWebRouter(getAssets(), view); // <-- route definitions are in here
+        manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
 
-        // Call out to the homepage
+        // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
             view.getSettings().setJavaScriptEnabled(true);
             view.setWebChromeClient(new BrowserEventListener(this));
@@ -57,6 +45,23 @@ public class MainActivity extends Activity {
             // send the view to home page, with a special flag to say this is the first page since app start.
             view.loadUrl("app://home"); // we can play fast-and-loose with the url structure.
         });
+    }
+
+    // Handle back button.
+    // If we're on the home page, we let Android deal with it.
+    // Otherwise we send it down to the web view
+    @Override
+    public void onBackPressed() {
+        if (Objects.equals(client.getLastRequest(), "app://home")){
+            super.onBackPressed();
+            return;
+        }
+
+        if (view.canGoBack()) { // probably not on home page
+            view.goBack();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     // first render of the homepage
@@ -90,5 +95,30 @@ public class MainActivity extends Activity {
         final Handler handler = new Handler(Looper.getMainLooper());
         handler.postDelayed(this::hideTitle, 10000); // close after 10 seconds
 
+    }
+
+    // Kick-off the startup process.
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        // NOTE:
+        // DO NOT add any more code to the onCreate method.
+        // It is small and lightweight on purpose.
+        // Do any start-up in the loadWebViewWithLocalClient() method.
+
+
+        super.onCreate(savedInstanceState);
+        this.setTitle("Loading..."); // temp message as soon as possible
+
+        // setup the web view
+        view = new WebView(this);
+        this.setContentView(view, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Do any heavy lifting out on a non-ui thread, so
+        // the 'loading' message gets a chance to update
+        new Thread(this::loadWebViewWithLocalClient).start();
+    }
+
+    public void clearHistory() {
+        client.clearHistory = true; // view.clearHistory() doesn't work, so we need this convoluted mess.
     }
 }

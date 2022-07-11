@@ -11,7 +11,7 @@ public class JsCallbackManager {
         this.mainActivity = mainActivity;
     }
 
-    @JavascriptInterface
+    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
     public void homepageLoaded() {
         mainActivity.HomepageLoaded();
     }
@@ -19,5 +19,10 @@ public class JsCallbackManager {
     @JavascriptInterface
     public void showTitle(String message) {
         mainActivity.PopupTitle(message);
+    }
+
+    @JavascriptInterface
+    public void clearHistory() {
+        mainActivity.clearHistory();
     }
 }

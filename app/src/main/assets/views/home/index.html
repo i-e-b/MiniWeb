@@ -2,38 +2,54 @@
 <p>This is a file from the xml template section</p>
 
 <h1>Templating</h1>
-<dl>
-    <dt>target type</dt><dd>{{isApp}}</dd>
-    <dt>controller name</dt><dd>{{controller}}</dd>
-    <dt>method name</dt><dd>{{method}}</dd>
-    <dt>parameters</dt><dd>{{params}}</dd>
-</dl>
+
+<p>This is {{an}} example of {{multiple}} replacement{{s}} in a single {{line}}.</p>
+<p>This is&nbsp;
+{{an}} example of starting a line with a hole,
+    and having a hole at the end of a {{line}}
+</p>
 
 <h1>Router</h1>
 <ul>
-    <li><a href="app://first/method?p1=x&p2=y">Test one</a></li>
-    <li><a href="app://second/otherMethod?p1=a&p2=b">Test two</a></li>
+    <!-- links to Java code in the android app should start with app://
+         the first element in the path is the name of the controller, second is method.
+         Query params are passed to controller methods as a Map<string,string>.
+         Controller methods have access to the whole request if you need more.
+
+         If no method is given, it defaults to 'index'
+
+         See ControllerBindings.BindAllControllers to add new controllers and methods.
+         -->
+    <li><a href="app://home/testOne?p1=x&p2=y">Test one</a> Back escape</li>
+    <li><a href="app://home/testTwo?first">Test two</a> Journey</li>
     <li><a href="app://home">Home</a></li>
-    <li><a href="javascript:manager.showTitle('Important message!')">Run Android code</a></li>
+
+    <!-- You can use 'file://...' but it's tricky. So we provide 'asset://...'
+         to directly use asset files -->
+    <li><a href="asset://styles/default.css">Default css file</a></li>
+
+    <!-- See core.JsCallbackManager for `showTitle` call -->
+    <li><a href="javascript:manager.showTitle('Important message!')">Run Android code (in this case, show a prominent message)</a></li>
+
+    <!-- We capture alert calls to show small confirmation messages - like 'Save' or 'Sent successfully'
+         Don't use this for messages that will block the user, like 'login failed'. Those should use the
+         `manager.showTitle()` call instead -->
     <li><a href="javascript:alert('just a little hello')">Show alert as toast message</a></li>
     <!-- fill up some space -->
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
-    <li></li>
+    {{for:listThing}}
+    <li>{{item:exampleField}}</li>
+    {{end:listThing}}
     <li>Scrolling works, huh?</li>
 </ul>
+
+<h4>Test that template engine handles bad input</h4>
+<p>Junk line {{line</p>
+<p>Junk line {{line}</p>
+<p>Junk line {{line </p>}}
+<p>Junk line {line}}</p>
+<p>Junk line {{</p>
+<p>Junk line {{}</p>
+<p>Junk line {}}</p>
+<p>Junk line {{}}</p>
+
+<tt>[end of page]</tt>
