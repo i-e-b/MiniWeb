@@ -1,6 +1,8 @@
-package e.s.miniweb.core;
+package e.s.miniweb;
 
 import android.webkit.JavascriptInterface;
+
+import e.s.miniweb.core.MainActivity;
 
 // Available to on-page JavaScript as 'manager'.
 // This handles page script-to-android-app functions.

@@ -20,10 +20,21 @@ public class ControllerBase {
 
         return resp;
     }
+    /**
+     * Send the user to another page. This will NOT clear the 'back' path
+     * @return data that will be used to render the page.
+     */
+    public TemplateResponse Redirect(String url){
+        TemplateResponse resp = new TemplateResponse();
+
+        resp.RedirectUrl = url;
+
+        return resp;
+    }
 
     /**
-     * Send the user back to home/index. This will also clear the 'back' button
-     * so the user doesn't get sent bck through a finished journey.
+     * Send the user back to home/index. This will also clear the 'back' path,
+     * so the user doesn't get sent back through a finished journey.
      * @return data that will be used to render the page.
      */
     public TemplateResponse EndOfPath(){

@@ -18,16 +18,14 @@ android {
 
     buildTypes {
         release {
-            ndk {
-                debugSymbolLevel = 'SYMBOL_TABLE'
-            }
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            //ndk {
+            //    debugSymbolLevel = 'SYMBOL_TABLE'
+            //}
+            //minifyEnabled true
+            //shrinkResources true
+            //proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            minifyEnabled false
-            shrinkResources false
         }
     }
     compileOptions {

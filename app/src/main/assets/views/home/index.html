@@ -2,7 +2,7 @@
 <p>This is the home page for your MiniWeb app</p>
 
 
-<h1>Examples</h1>
+<h4>Tour</h4>
 <ul>
     <!-- links to Java code in the android app should start with app://
          the first element in the path is the name of the controller, second is method.
@@ -13,26 +13,33 @@
 
          See ControllerBindings.BindAllControllers to add new controllers and methods.
          -->
-    <li>Test: <a href="app://test/model-paths">Templating</a></li>
-    <li>Test: <a href="app://test/testTwo?first">Journey</a></li>
-    <li>Test: <a href="app://test/testOne">Back escape</a></li>
-    <li>Test: <a href="app://test/bad-input">Bad Templates</a></li>
-    <li>Test: <a href="app://test/bad-method">Link to a page that crashes</a></li>
-    <li>Test: <a href="app://wrong/location">Link to a non existent page</a></li>
 
-    <!-- MiniWeb provides 'asset://...' urls to directly use asset files.
-         This can be used for styles, images etc. -->
-    <li>Example: <a href="asset://styles/default.css">See default css file</a></li>
-    <li>Example: <a href="asset://images/backdrop.png">See an image file</a></li>
+    <li style="list-style-type:none">Examples:</li>
+    <li><a href="app://test/model-paths">Templating</a></li>
+    <li><a href="app://test/paramsAndForms?name=Example&surname=McTester">Forms and parameters</a></li>
+    <li><a href="app://test/testTwo?first">Journey</a><br/></li>
 
+    <li style="list-style-type:none">&nbsp;</li>
+    <li style="list-style-type:none">Feature demos:</li>
     <!-- We capture alert calls to show small confirmation messages - like 'Save' or 'Sent successfully'
          Don't use this for messages that will block the user, like 'login failed'. Those should use the
          `manager.showTitle()` call instead -->
-    <li>Example: <a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
+    <li><a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
 
     <!-- See core.JsCallbackManager for `showTitle` call -->
-    <li>Example: <a href="javascript:manager.showTitle('Important message!')">Run Android code</a><br/>
+    <li><a href="javascript:manager.showTitle('Important message!')">Run Android code</a><br/>
         (in this case, show a prominent message)</li>
+
+    <li style="list-style-type:none">&nbsp;</li>
+    <li style="list-style-type:none">Tests:</li>
+    <!-- MiniWeb provides 'asset://...' urls to directly use asset files.
+         This can be used for styles, images etc. -->
+    <li><a href="asset://styles/default.css">See default css file</a></li>
+    <li><a href="asset://images/backdrop.png">See an image file</a></li>
+    <li><a href="app://test/bad-input">Bad Templates</a></li>
+    <li><a href="app://test/bad-method">Link to a page that crashes</a></li>
+    <li><a href="app://wrong/location">Link to a non existent page</a></li>
+    <li><a href="app://test/testOne">Back escape</a></li>
 </ul>
 
 <script type="text/javascript">

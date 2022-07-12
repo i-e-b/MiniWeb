@@ -10,6 +10,8 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Toast;
 
+import e.s.miniweb.JsCallbackManager;
+
 public class MainActivity extends Activity {
     private WebView view;
     private AppWebRouter client;

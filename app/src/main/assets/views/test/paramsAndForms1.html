@@ -1,0 +1,24 @@
+<h1>Forms</h1>
+<p>
+    These will be pre-filled with the URL's parameters if provided. See the controller method.
+    Forms are somewhat limited in Android WebView. See the source of this page for how we work
+    around the issues. You could also call
+</p>
+<!-- NOTE: method="post" will not work. This is a problem with Android WebView -->
+<form method="get">
+    <input type="hidden" name="isPostback" value="true"/><!-- this lets us switch -->
+    <input type="text" value="{{Name}}" name="name" alt="Enter your name"/><br/>
+    <input type="text" value="{{Surname}}" name="surname" alt="Enter your surname"/>
+    <input type="submit" value="Send"/>
+</form>
+
+<p>
+    You can have more than one form on a page...
+</p>
+
+<form method="get" action="app://test/paramsAndForms2">
+    <input type="hidden" name="isPostback" value="true"/><!-- this lets us switch -->
+    <input type="text" value="{{Name}}" name="name" alt="Enter your name"/><br/>
+    <input type="text" value="{{Surname}}" name="surname" alt="Enter your surname"/>
+    <input type="submit" value="Send"/>
+</form>
