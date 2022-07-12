@@ -1,4 +1,4 @@
-package e.s.miniweb.template;
+package e.s.miniweb.core.template;
 
 import android.content.res.AssetManager;
 import android.webkit.WebResourceRequest;

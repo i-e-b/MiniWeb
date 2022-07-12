@@ -5,8 +5,8 @@ import android.webkit.WebResourceRequest;
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
-import e.s.miniweb.template.TemplateEngine;
-import e.s.miniweb.template.TemplateResponse;
+import e.s.miniweb.core.template.TemplateEngine;
+import e.s.miniweb.core.template.TemplateResponse;
 
 @SuppressWarnings("unused")
 public class Home extends ControllerBase {

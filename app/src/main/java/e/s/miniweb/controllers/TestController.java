@@ -10,8 +10,8 @@ import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.models.NestedObjectModel;
-import e.s.miniweb.template.TemplateEngine;
-import e.s.miniweb.template.TemplateResponse;
+import e.s.miniweb.core.template.TemplateEngine;
+import e.s.miniweb.core.template.TemplateResponse;
 @SuppressWarnings("unused")
 
 /*

@@ -10,12 +10,15 @@ import android.webkit.WebViewClient;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.util.List;
 import java.util.Objects;
 
 import e.s.miniweb.ControllerBindings;
-import e.s.miniweb.template.TemplateEngine;
+import e.s.miniweb.core.template.TemplateEngine;
 
 public class AppWebRouter extends WebViewClient {
     final private TemplateEngine template;
@@ -62,8 +65,16 @@ public class AppWebRouter extends WebViewClient {
         // We could check for a https://*.my-site.com url for going outside etc.
 
         PageResult pageString = getResultContent(request);
+
+        // is this a raw data result (i.e. from a file)
+        if (pageString.rawData != null){
+            return new WebResourceResponse(pageString.mimeType, null, pageString.rawData);
+        }
+
+        // is it junk?
         if (pageString.data == null) return null;
 
+        // Ok, looks like a string. Encode and output
         InputStream data = new ByteArrayInputStream(pageString.data.getBytes());
         return new WebResourceResponse(pageString.mimeType, "utf-8", data);
     }
@@ -97,10 +108,10 @@ public class AppWebRouter extends WebViewClient {
 
             } else if (scheme.equals("asset")) {
                 String path = url.getHost()+url.getPath();
-                controller = "asset control";
+                controller = "asset fetch";
                 method = path;
 
-                pageResult.data = getRawAsset(path);
+                pageResult.rawData = getRawAsset(path);
                 pageResult.mimeType = guessMime(path);
                 return pageResult;
 
@@ -121,6 +132,13 @@ public class AppWebRouter extends WebViewClient {
         if (path.endsWith(".css")) return "text/css";
         if (path.endsWith(".html")) return "text/html";
         if (path.endsWith(".js")) return "application/javascript";
+
+        if (path.endsWith(".png")) return "image/png";
+        if (path.endsWith(".webp")) return "image/webp";
+        if (path.endsWith(".jpg")) return "image/jpeg";
+        if (path.endsWith(".jpeg")) return "image/jpeg";
+        if (path.endsWith(".gif")) return "image/gif"; // pronounced "hiff"
+
         return "application/octet-stream";
     }
 
@@ -165,26 +183,9 @@ public class AppWebRouter extends WebViewClient {
         public String Method;
     }
 
-    private String getRawAsset(String path) {
+    private InputStream getRawAsset(String path) {
         try {
-            StringBuilder sb = new StringBuilder();
-
-            InputStream is = assets.open(path);
-            BufferedReader br = new BufferedReader(new InputStreamReader(is));
-
-            String readLine;
-
-            try {
-                while ((readLine = br.readLine()) != null) {
-                    sb.append(readLine);
-                }
-                is.close();br.close();
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            return sb.toString();
+            return assets.open(path);
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
             return null;
@@ -194,5 +195,6 @@ public class AppWebRouter extends WebViewClient {
     private static class PageResult {
         public String data;
         public String mimeType;
+        public InputStream rawData;
     }
 }

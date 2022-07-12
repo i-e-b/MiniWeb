@@ -1,6 +1,6 @@
 package e.s.miniweb.core;
 
-import e.s.miniweb.template.TemplateResponse;
+import e.s.miniweb.core.template.TemplateResponse;
 
 public class ControllerBase {
     /**
