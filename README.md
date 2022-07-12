@@ -33,3 +33,8 @@ the controller method.
 ### Simple values
 
 
+## Important notes
+
+* The "models" and "assets" paths are protected from being minified when the release apk is built. Any classes outside of these folders may not work.
+
+

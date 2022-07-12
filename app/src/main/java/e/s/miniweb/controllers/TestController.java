@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
+import e.s.miniweb.models.NestedObjectModel;
 import e.s.miniweb.template.TemplateEngine;
 import e.s.miniweb.template.TemplateResponse;
 @SuppressWarnings("unused")
@@ -27,6 +28,14 @@ public class TestController extends ControllerBase {
         TemplateEngine.BindMethod("test", "testTwo", this::testTwo);
         TemplateEngine.BindMethod("test", "model-paths", this::modelPaths);
         TemplateEngine.BindMethod("test", "bad-input", this::badInput);
+        TemplateEngine.BindMethod("test", "bad-method", this::badMethod);
+    }
+
+    /**
+     * Demonstrate what happens when a web method crashes
+     */
+    private TemplateResponse badMethod(Map<String, String> parameter, WebResourceRequest request) throws Exception {
+        throw new Exception("This is an example crash!");
     }
 
     private TemplateResponse badInput(Map<String, String> params, WebResourceRequest request) {
@@ -44,12 +53,12 @@ public class TestController extends ControllerBase {
         list.add(new ExampleObject("a"));
         list.add(new ExampleObject("list"));
 
-        List<NestObject> nested = new ArrayList<>();
-        nested.add(new NestObject("First child"));
-        nested.add(new NestObject("Second child"));
+        List<NestedObjectModel> nested = new ArrayList<>();
+        nested.add(new NestedObjectModel("First child"));
+        nested.add(new NestedObjectModel("Second child"));
 
-        Map<String, NestObject> sampleMapNest = new HashMap<>();
-        sampleMapNest.put("myKey", new NestObject("deep"));
+        Map<String, NestedObjectModel> sampleMapNest = new HashMap<>();
+        sampleMapNest.put("myKey", new NestedObjectModel("deep"));
 
         Object model = new Object() {
             public final String an = "an";
@@ -60,10 +69,10 @@ public class TestController extends ControllerBase {
             public final boolean falseValue = false;
             public final boolean trueValue = true;
             public final Object nullValue = null;
-            public final NestObject pathPoints = new NestObject("This value comes from a dotted path");
-            public final List<NestObject> nestedRepeat = nested;
+            public final NestedObjectModel pathPoints = new NestedObjectModel("This value comes from a dotted path");
+            public final List<NestedObjectModel> nestedRepeat = nested;
             public final List<ExampleObject> listThing = list;
-            public final Map<String, NestObject> mapNest = sampleMapNest;
+            public final Map<String, NestedObjectModel> mapNest = sampleMapNest;
         };
 
         return Page("test/modelPaths", model);
@@ -103,26 +112,10 @@ public class TestController extends ControllerBase {
     // to drive the template engine
 
     private static class ExampleObject {
-        public String exampleField;
+        public final String exampleField;
 
         public ExampleObject(String msg) {
             exampleField = msg;
-        }
-    }
-
-    private static class NestObject {
-        public List<String> children;
-        public String name;
-
-        public NestObject(String name){
-            this.name = name;
-
-            // shove in some sample data
-            children = new ArrayList<>();
-            children.add("one");
-            children.add("two");
-            children.add("three");
-            children.add("four");
         }
     }
 }

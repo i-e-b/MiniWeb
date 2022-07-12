@@ -17,19 +17,24 @@
     <li>Test: <a href="app://test/testTwo?first">Journey</a></li>
     <li>Test: <a href="app://test/testOne">Back escape</a></li>
     <li>Test: <a href="app://test/bad-input">Bad Templates</a></li>
+    <li>Test: <a href="app://test/bad-method">Link to a page that crashes</a></li>
+    <li>Test: <a href="app://wrong/location">Link to a non existent page</a></li>
 
     <!-- MiniWeb provides 'asset://...' urls to directly use asset files.
          This can be used for styles, images etc. -->
     <li>Example: <a href="asset://styles/default.css">See default css file</a></li>
 
-    <!-- See core.JsCallbackManager for `showTitle` call -->
-    <li>Example: <a href="javascript:manager.showTitle('Important message!')">Run Android code</a><br/>(in this case, show a prominent message)</li>
-
     <!-- We capture alert calls to show small confirmation messages - like 'Save' or 'Sent successfully'
          Don't use this for messages that will block the user, like 'login failed'. Those should use the
          `manager.showTitle()` call instead -->
     <li>Example: <a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
+
+    <!-- See core.JsCallbackManager for `showTitle` call -->
+    <li>Example: <a href="javascript:manager.showTitle('Important message!')">Run Android code</a><br/>
+        (in this case, show a prominent message)</li>
 </ul>
 
-<!-- this clears the 'back' list any time you hit the home page. Feel free to remove it -->
-<script>manager.clearHistory()</script>
+<script type="text/javascript">
+    manager.clearHistory(); // this clears the 'back' list any time you hit the home page. Feel free to remove it
+    manager.homepageLoaded(); // this removes the title bar once the app has fully loaded
+</script>

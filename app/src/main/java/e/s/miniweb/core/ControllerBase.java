@@ -12,6 +12,9 @@ public class ControllerBase {
     public TemplateResponse Page(String viewPath, Object model){
         TemplateResponse resp = new TemplateResponse();
 
+        // just in case someone put the file ending on, we take it back off.
+        if (viewPath.endsWith(".html")) viewPath=viewPath.substring(0, viewPath.length() - 5);
+
         resp.TemplatePath = viewPath;
         resp.Model = model;
 
@@ -27,6 +30,7 @@ public class ControllerBase {
         TemplateResponse resp = new TemplateResponse();
 
         resp.RedirectUrl = "app://home";
+        resp.ShouldClearHistory = true;
 
         return resp;
     }

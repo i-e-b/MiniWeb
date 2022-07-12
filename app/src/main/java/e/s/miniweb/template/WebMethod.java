@@ -6,5 +6,5 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface WebMethod {
-    TemplateResponse generate(Map<String, String> parameters, WebResourceRequest request);
+    TemplateResponse generate(Map<String, String> parameters, WebResourceRequest request) throws Exception;
 }

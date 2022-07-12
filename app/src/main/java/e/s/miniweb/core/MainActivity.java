@@ -10,8 +10,6 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Toast;
 
-// todo: this class is big. Try to simplify
-
 public class MainActivity extends Activity {
     private WebView view;
     private AppWebRouter client;

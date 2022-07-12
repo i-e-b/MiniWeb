@@ -4,6 +4,7 @@ import android.content.res.AssetManager;
 import android.webkit.WebResourceRequest;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -47,7 +48,7 @@ public class TemplateEngine {
 
     // Call out to the controller, get a template and model object.
     // Fill out template, then return the resulting document as a string.
-    public String Run(String controller, String method, String params, WebResourceRequest request) {
+    public String Run(String controller, String method, String params, WebResourceRequest request) throws Exception {
         String composite = controller+"|="+method;
 
         if ( ! responders.containsKey(composite)){
@@ -63,10 +64,6 @@ public class TemplateEngine {
 
         TemplateResponse tmpl = getDocTemplate(request, params, wm);
 
-        if (tmpl == null){
-            System.out.println("Invalid controller response!");
-            return null;
-        }
         if (tmpl.RedirectUrl != null){
             return redirectPage(tmpl);
         }
@@ -74,22 +71,46 @@ public class TemplateEngine {
         return transformTemplate(tmpl, null);
     }
 
+    /**
+     * Render one of the internal templates -- for errors, redirects, etc.
+     * You should provide the full file name (like "redirect.html")
+     */
+    public String internalTemplate(String name, Object model){
+        try {
+            TemplateResponse tmpl = new TemplateResponse();
+            tmpl.TemplateLines = new ArrayList<>();
+            tmpl.Model = model;
+
+            readAsset("internal/"+name, tmpl);
+            return transformTemplate(tmpl, null);
+        } catch (Exception ex){
+            // don't call the error template. Something might be broken with the apk!
+            StringBuilder sb = new StringBuilder();
+            sb.append("<h1>Internal error</h1><pre>\r\n");
+            StackTraceElement[] stack = ex.getStackTrace();
+            for (StackTraceElement element : stack) {
+                sb.append(element.toString());
+            }
+            sb.append("</pre>");
+            return sb.toString();
+        }
+    }
+
+    /**
+     * Render a page that causes a redirect
+     */
     private String redirectPage(TemplateResponse tmpl) {
-        return "<!doctype html>" +
-                "<html lang=\"en-US\">" +
-                "    <head>" +
-                "        <meta charset=\"UTF-8\">" +
-                "        <meta http-equiv=\"refresh\" content=\"0; url="+tmpl.RedirectUrl+"\">" +
-                "        <script type=\"text/javascript\">" +
-                "            manager.clearHistory();" +
-                "            window.location.href = \""+ tmpl.RedirectUrl+"\";" +
-                "        </script>\n" +
-                "        <title>Page Redirection</title>\n" +
-                "    </head>\n" +
-                "    <body>\n" +
-                "        If you are not redirected automatically, <a href=\\\"\"+tmpl.RedirectUrl+\"\\\">follow this link</a>.\n" +
-                "    </body>\n" +
-                "</html>";
+        return internalTemplate("redirect.html", new RedirectModel(tmpl));
+    }
+
+    private static class RedirectModel {
+        public final String RedirectUrl;
+        public final boolean ShouldClearHistory;
+
+        public RedirectModel(TemplateResponse tmpl) {
+            RedirectUrl = tmpl.RedirectUrl;
+            ShouldClearHistory = tmpl.ShouldClearHistory;
+        }
     }
 
     // Replace {{name}} with tmpl.Model.name.toString()
@@ -101,13 +122,13 @@ public class TemplateEngine {
     // Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
     private String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
         StringBuilder sb = new StringBuilder();
-        //tmpl.TemplateLines.get(0);
 
         List<String> templateLines = tmpl.TemplateLines;
         for (int lineIndex = 0, templateLinesSize = templateLines.size(); lineIndex < templateLinesSize; lineIndex++) {
             String line = templateLines.get(lineIndex);
             if (!line.contains("{{")) { // plain text line
                 sb.append(line);
+                sb.append("\r\n");
                 continue;
             }
 
@@ -131,6 +152,7 @@ public class TemplateEngine {
 
             // everything should be done now.
             sb.append(line);
+            sb.append("\r\n");
         }
 
         return sb.toString();
@@ -338,37 +360,35 @@ public class TemplateEngine {
         }
     }
 
-    private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod wm) {
+    private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod wm) throws Exception {
+        TemplateResponse resp = wm.generate(mapParams(params), request);
+        if (resp == null) throw new Exception("Method gave a bad result");
+        if (resp.RedirectUrl != null) return resp;
+
+        resp.TemplateLines = new ArrayList<>();
+        readAsset("views/" + resp.TemplatePath + ".html", resp);
+
+        return resp;
+    }
+
+    private void readAsset(String fileName, TemplateResponse resp) throws IOException {
+        InputStream is = assets.open(fileName);
+        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+        String readLine;
+
         try {
-            TemplateResponse resp = wm.generate(mapParams(params), request);
-            if (resp.RedirectUrl != null) return resp;
-
-            resp.TemplateLines = new ArrayList<>();
-
-            InputStream is = assets.open("views/" + resp.TemplatePath + ".html");
-            BufferedReader br = new BufferedReader(new InputStreamReader(is));
-
-            String readLine;
-
-            try {
-                // While the BufferedReader readLine is not null
-                while ((readLine = br.readLine()) != null) {
-                    resp.TemplateLines.add(readLine); // add it to the template
-                }
-
-                // Close the InputStream and BufferedReader
-                is.close();
-                br.close();
-
-            } catch (Exception e) {
-                e.printStackTrace();
+            // While the BufferedReader readLine is not null
+            while ((readLine = br.readLine()) != null) {
+                resp.TemplateLines.add(readLine); // add it to the template
             }
 
-            return resp;
-        } catch (Exception ex) {
-            // returning null will trigger an error page with a back button
-            System.out.println(ex.getLocalizedMessage());
-            return null;
+            // Close the InputStream and BufferedReader
+            is.close();
+            br.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

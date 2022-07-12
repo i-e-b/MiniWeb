@@ -5,12 +5,45 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
+# We use reflected names for templating, so avoid any renaming.
+#-dontobfuscate
+
+-optimizations *
+-optimizationpasses 5
+-overloadaggressively
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+-keepclassmembers class e.s.miniweb.core.JsCallbackManager { *; }
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Keep names in controllers to stop reflection being broken.
+-keep public class e.s.miniweb.core.MainActivity
+
+-keepclassmembernames class e.s.miniweb.controllers.** { *; }
+-keepnames class e.s.miniweb.controllers.** { *; }
+-keep public class e.s.miniweb.controllers.** { *; }
+
+
+-keepclassmembernames class e.s.miniweb.models.** { *; }
+-keepnames class e.s.miniweb.models.** { *; }
+-keep public class e.s.miniweb.models.** { *; }
+
+-keepclassmembernames class **Model { *; }
+-keepnames class **Model { *; }
+-keep public class **Model { *; }
+-keepattributes *Annotation*
+
+-keepclassmembers class ** {
+    public void on*(**);
+}
+
+# repack obfuscated classes into single package so it would be hard to find their originall package
+-repackageclasses ''
+-allowaccessmodification
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.

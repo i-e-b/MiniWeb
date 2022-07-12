@@ -1,0 +1,14 @@
+<!doctype html>
+<html>
+<head>
+    <link rel="stylesheet" href="asset://styles/default.css" type="text/css">
+</head>
+<body>
+<h1>Error</h1>
+<h2>{{Message}}</h2>
+<p>A problem happened in the app. You can send a screenshot of this screen to the support team</p>
+{{for:Controller}}
+<p>Controller={{Controller}}; Method={{Method}};</p>
+{{end:Controller}}
+<a href="app://home">Home</a></body>
+</html>

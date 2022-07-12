@@ -2,8 +2,6 @@ package e.s.miniweb.controllers;
 
 import android.webkit.WebResourceRequest;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en-US">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0; url={{RedirectUrl}}">
+    <script type="text/javascript">
+        {{for:ShouldClearHistory}}
+        manager.clearHistory();
+        {{end:ShouldClearHistory}}
+        window.location.href = "{{RedirectUrl}}";
+    </script>
+    <title>Page Redirection</title>
+</head>
+<body>
+If you are not redirected automatically, <a href="{{RedirectUrl}}">follow this link</a>.
+</body>
+</html>

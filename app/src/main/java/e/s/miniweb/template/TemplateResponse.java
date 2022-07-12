@@ -10,7 +10,10 @@ public class TemplateResponse {
     // If not null, the web view will be redirected to this url
     public String RedirectUrl;
 
-    // Internal. Todo: move?
+    // if true AND RedirectUrl is set, the web view history will be cleared after rendering the page.
+    public boolean ShouldClearHistory = false;
+
+    // Internal
     public List<String> TemplateLines;
 
     public TemplateResponse cloneRange(int startIndex, int endIndex) {
