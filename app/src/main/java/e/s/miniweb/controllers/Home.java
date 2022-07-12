@@ -1,10 +1,8 @@
 package e.s.miniweb.controllers;
 
-import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.webkit.WebResourceRequest;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -20,8 +18,6 @@ public class Home extends ControllerBase {
      */
     public Home() {
         TemplateEngine.BindMethod("home", "index", this::index);
-        TemplateEngine.BindMethod("home", "testOne", this::testOne);
-        TemplateEngine.BindMethod("home", "testTwo", this::testTwo);
     }
 
     /**
@@ -29,82 +25,7 @@ public class Home extends ControllerBase {
      * "home/index" is the special landing page (feel free to use the url "app://home" anywhere)
      */
     public TemplateResponse index(Map<String, String> parameters, WebResourceRequest request) {
-        List<ExampleObject> list = new ArrayList<>();
-        list.add(new ExampleObject("hello"));
-        list.add(new ExampleObject("this"));
-        list.add(new ExampleObject("is"));
-        list.add(new ExampleObject("a"));
-        list.add(new ExampleObject("list"));
-
-        List<NestObject> nested = new ArrayList<>();
-        nested.add(new NestObject("First child"));
-        nested.add(new NestObject("Second child"));
-
-        Object model = new Object() {
-            public final String an = "an";
-            public final String multiple = "multiple";
-            public final String s = "s";
-            public final String line = "line";
-            public final String controller = "Home";
-            public final boolean falseValue = false;
-            public final boolean trueValue = true;
-            public final Object nullValue = null;
-            public final List<NestObject> nestedRepeat = nested;
-            public final List<ExampleObject> listThing = list;
-        };
-
-        return Page("home/index", model);
-    }
-
-    /**
-     * Demo page. Delete as required
-     * Demonstrates the 'get out of jail free card' that is the Android back button.
-     */
-    private TemplateResponse testOne(Map<String, String> parameters, WebResourceRequest request) {
-        Object model = new Object() {
-            public final String time = new Date().toString();
-        };
-
-        // There is no requirement to have views and controllers line up BUT it is a good idea.
-        return Page("test/testOne", model);
-    }
-
-    /**
-     * Demo page. Delete as required
-     * Demonstrates how to do a redirect
-     */
-    private TemplateResponse testTwo(Map<String, String> parameters, WebResourceRequest request) {
-
-        if (parameters.containsKey("first")) {
-            // There is no requirement to have views and controllers line up BUT it is a good idea.
-            return Page("test/testTwo", null);
-        }
-
-        return EndOfPath(); // redirect to home and clear 'back' history.
-    }
-
-
-    private class ExampleObject {
-        public String exampleField;
-
-        public ExampleObject(String msg) {
-            exampleField = msg;
-        }
-    }
-
-    private class NestObject {
-        public List<String> children;
-        public String name;
-
-        public NestObject(String name){
-            this.name = name;
-
-            // shove in some sample data
-            children = new ArrayList<>();
-            children.add("one");
-            children.add("two");
-            children.add("three");
-            children.add("four");
-        }
+        // viewPath is required, but model is optional.
+        return Page("home/index", null);
     }
 }

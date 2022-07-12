@@ -17,17 +17,16 @@ import java.util.Objects;
 import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.template.TemplateEngine;
 
+// todo: this class is big. Try to simplify
+
 public class AppWebRouter extends WebViewClient {
     final private TemplateEngine template;
     private final AssetManager assets;
-    private final WebView view;
-    private String lastAppUrl;
     public boolean clearHistory;
 
-    public AppWebRouter(AssetManager assets, WebView view){
+    public AppWebRouter(AssetManager assets){
         template = new TemplateEngine(assets);
         this.assets = assets;
-        this.view = view;
 
         // Prepare all the controllers for everything
         ControllerBindings.BindAllControllers();
@@ -88,7 +87,6 @@ public class AppWebRouter extends WebViewClient {
                 return pageResult;
 
             } else if (Objects.equals(scheme, "app")) { // controller pages
-                lastAppUrl = url.toString();
                 pageResult.data = getControllerResponse(request);
                 pageResult.mimeType = "text/html";
                 return pageResult;
@@ -182,12 +180,7 @@ public class AppWebRouter extends WebViewClient {
         }
     }
 
-    // Return the last 'app' url that was requested, or null
-    public String getLastRequest() {
-        return lastAppUrl;
-    }
-
-    private class PageResult {
+    private static class PageResult {
         public String data;
         public String mimeType;
     }

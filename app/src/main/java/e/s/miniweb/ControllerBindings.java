@@ -1,6 +1,6 @@
 package e.s.miniweb;
 
-import e.s.miniweb.controllers.Home;
+import e.s.miniweb.controllers.*;
 import e.s.miniweb.template.TemplateEngine;
 
 public class ControllerBindings {
@@ -8,6 +8,7 @@ public class ControllerBindings {
     // Otherwise Java has no idea it exists.
     public static void BindAllControllers(){
         TemplateEngine.Use(new Home());
+        TemplateEngine.Use(new TestController());
     }
 
 }

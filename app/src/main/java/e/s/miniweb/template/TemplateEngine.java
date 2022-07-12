@@ -6,14 +6,16 @@ import android.webkit.WebResourceRequest;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+// todo: this class is big. Try to simplify
 
 public class TemplateEngine {
     // composite name => call-back; Composite is controller | method
@@ -260,14 +262,67 @@ public class TemplateEngine {
                 return model.toString();
             }
 
-            Field field = model.getClass().getField(name);
+            Object value = searchForField(model, name);
 
-            Object value = field.get(model);
             if (value == null) return "";
             return value.toString();
-        } catch (NoSuchFieldException | IllegalAccessException ignore) {
+        } catch (Exception ex) {
             return "["+name+"]";
         }
+    }
+
+    /**
+     * Hunts though object hierarchies for values.
+     * The simplest and fastest path is to have a single field name.
+     */
+    private Object searchForField(Object model, String name) throws NoSuchFieldException, IllegalAccessException {
+        if (!name.contains(".")) { // simple case
+            return model.getClass().getField(name).get(model);
+        }
+
+        Object src = model;
+        String[] pathBits = name.split("[.]");
+
+        // walk down the chain
+        for (String bit : pathBits) {
+            if (src == null) return null;
+
+            if (looksLikeInt(bit)) { // index into iterable, or fail
+                int idx = Integer.parseInt(bit);
+                src = getIterableIndexed(src, idx);
+            } else if (src instanceof Map){
+                src = ((Map<?, ?>) src).get(bit);
+            } else { // get field by name, or fail
+                src = src.getClass().getField(bit).get(src);
+            }
+        }
+        return src;
+    }
+
+    @SuppressWarnings("rawtypes")
+    private Object getIterableIndexed(Object src, int idx) {
+        // coding in Java feels more old fashioned than C.
+        try {
+            if (src == null || idx < 0) return null;
+            Iterable items = (Iterable) src;
+            Iterator iterator = items.iterator();
+
+            Object current = iterator.next();
+            for (int counter = 0; counter < idx; counter++)
+                current = iterator.next();
+
+            return current;
+        } catch (Exception ex){
+            return null;
+        }
+    }
+
+    private boolean looksLikeInt(String str){
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c < '0' || c > '9') return false;
+        }
+        return true;
     }
 
     private Object findFieldObject(Object model, String name) {
@@ -277,8 +332,7 @@ public class TemplateEngine {
 
             if (name.equals("")) return model; // special case {{for:}} -> use the model directly
 
-            Field field = model.getClass().getField(name);
-            return field.get(model);
+            return searchForField(model, name);
         } catch (NoSuchFieldException | IllegalAccessException ignore) {
             return null;
         }

@@ -1,15 +1,8 @@
 <h1>Hello, world!</h1>
-<p>This is a file from the xml template section</p>
+<p>This is the home page for your MiniWeb app</p>
 
-<h1>Templating</h1>
 
-<p>This is {{an}} example of {{multiple}} replacement{{s}} in a single {{line}}.</p>
-<p>This is&nbsp;
-{{an}} example of starting a line with a hole,
-    and having a hole at the end of a {{line}}
-</p>
-
-<h1>Router</h1>
+<h1>Examples</h1>
 <ul>
     <!-- links to Java code in the android app should start with app://
          the first element in the path is the name of the controller, second is method.
@@ -20,85 +13,23 @@
 
          See ControllerBindings.BindAllControllers to add new controllers and methods.
          -->
-    <li><a href="app://home/testOne?p1=x&p2=y">Test one</a> Back escape</li>
-    <li><a href="app://home/testTwo?first">Test two</a> Journey</li>
-    <li><a href="app://home">Home</a></li>
+    <li>Test: <a href="app://test/model-paths">Templating</a></li>
+    <li>Test: <a href="app://test/testTwo?first">Journey</a></li>
+    <li>Test: <a href="app://test/testOne">Back escape</a></li>
+    <li>Test: <a href="app://test/bad-input">Bad Templates</a></li>
 
-    <!-- You can use 'file://...' but it's tricky. So we provide 'asset://...'
-         to directly use asset files -->
-    <li><a href="asset://styles/default.css">Default css file</a></li>
+    <!-- MiniWeb provides 'asset://...' urls to directly use asset files.
+         This can be used for styles, images etc. -->
+    <li>Example: <a href="asset://styles/default.css">See default css file</a></li>
 
     <!-- See core.JsCallbackManager for `showTitle` call -->
-    <li><a href="javascript:manager.showTitle('Important message!')">Run Android code (in this case, show a prominent message)</a></li>
+    <li>Example: <a href="javascript:manager.showTitle('Important message!')">Run Android code</a><br/>(in this case, show a prominent message)</li>
 
     <!-- We capture alert calls to show small confirmation messages - like 'Save' or 'Sent successfully'
          Don't use this for messages that will block the user, like 'login failed'. Those should use the
          `manager.showTitle()` call instead -->
-    <li><a href="javascript:alert('just a little hello')">Show alert as toast message</a></li>
-    <!-- fill up some space with a repeater
-         note that the '{{for:...}}' and '{{end:...}}'
-         MUST be on their own line, with no other text, elements, or comments. -->
-    {{for:listThing}}
-        <!-- '{{item:...}}' is used to get values from the field of the closest '{{for:...}}'
-             You can't read from a parent 'for'. Extend your view model instead -->
-        <li>{{item:exampleField}}</li>
-    {{end:listThing}}
-    {{for:an}}
-        <li>I only show when 'an' is not null</li>
-        <!-- for blocks can nest, but NOT inside any other block for the same item -->
-        {{for:falseValue}}
-            <li>I only show when 'falseValue' is not false. So you can't see me?!</li>
-        {{end:falseValue}}
-
-        {{for:trueValue}}
-        <li>I only show when 'trueValue' is not false. So you can see me.</li>
-        {{end:trueValue}}
-    {{end:an}}
-    {{for:nullValue}}
-    <li>I only show when 'nullValue' is not null. So you can't see me?!</li>
-    {{end:nullValue}}
-    <li>Scrolling works, huh?</li>
+    <li>Example: <a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
 </ul>
 
-<h1>Complex repeating</h1>
-{{for:nestedRepeat}}
-    <h4>{{item:name}}</h4>
-    <p>This is {{item:name}} it has child items:</p>
-    <ol>
-        {{for:item:children}}
-        <!-- 'item:' with no field name returns the item's .toString value.
-             Useful if the child is a simple value, like in this case -->
-        <li>{{item:}}</li>
-        {{end:item:children}}
-    </ol>
-{{end:nestedRepeat}}
-
-<h1>Bad Input</h1>
-<p>These are various tests to check the template engine can handle bad inputs</p>
-<p>Junk line {{line</p>
-<p>Junk line {{line}</p>
-<p>Junk line {{line </p>}}
-{{for:listThing}}not empty!
-not empty{{for:listThing}}not empty!
-not empty{{for:listThing}}
-
-<!-- nesting of the same input is not supported -->
-{{for:listThing}}
-{{for:listThing}}
-
-<!-- non-simple nesting (can't end an outer 'for' before the inner one) -->
-{{for:line}}
-{{end:listThing}}
-<!-- ends without starts -->
-{{end:listThing}}
-{{end:listThing}}
-<!-- end for something that didn't start -->
-{{end:line}}
-<p>Junk line {line}}</p>
-<p>Junk line {{</p>
-<p>Junk line {{}</p>
-<p>Junk line {}}</p>
-<!-- this one outputs the model's .toString() value. Rare that this is correct, but it might be -->
-<p>Junk line {{}}</p>
-
-<tt>[end of page]</tt>
+<!-- this clears the 'back' list any time you hit the home page. Feel free to remove it -->
+<script>manager.clearHistory()</script>

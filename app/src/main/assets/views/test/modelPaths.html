@@ -1,0 +1,86 @@
+<h1>Test of model paths</h1>
+<a href="app://home">Home</a>
+<p>
+    This page contains a set of template replacement samples.
+    You can look in the file at <tt>assets/views/test/modelPaths.html</tt>
+    to see how it works in code, and for some extra notes.
+</p>
+
+<h1>Templating</h1>
+
+<p>This is {{an}} example of {{multiple}} replacement{{s}} in a single {{line}}.</p>
+<p>This is&nbsp;
+{{an}} example of starting a line with a hole,
+    and having a hole at the end of a {{line}}
+</p>
+<p>
+    You can use dotted paths to reach into objects. It's better to avoid this and
+    have a simpler flat structure -- but the feature is available: <i>{{pathPoints.name}}</i>.
+    You can reach into more complex structures like
+    <tt>nestedRepeat.0.children.1 = "{{nestedRepeat.0.children.1}}"</tt>
+    (note iterables are zero-indexed)
+    or
+    <tt>mapNest.myKey.name = "{{mapNest.myKey.name}}"</tt>,
+    but this is slower to render and more complex to use.
+</p>
+
+<h1>for: and item:</h1>
+<p>Look at the html template to see how this works</p>
+<ul>
+    <!-- Using 'for':
+         Note that the '{{for:...}}' and '{{end:...}}'
+         MUST be on their own line, with no other text, elements, or comments.
+         The template engine isn't very smart, and it will try to fill templates if it finds them in comments.
+    -->
+
+    <!-- After the 'for:', give the name of a field in the model.
+         If the object is a list (or other kind of `Iterable`)
+         the contents will be repeated for each item
+    -->
+    {{for:listThing}}
+        <!-- '{{item:...}}' is used to get values from the field of the closest '{{for:...}}'
+             You can't read from a parent 'for'. Extend your view model instead -->
+        <li>{{item:exampleField}}</li>
+    {{end:listThing}}
+
+    {{for:an}}
+        <li>I only show when 'an' is not null</li>
+
+        <!-- for blocks can nest, but NOT inside any other block for the same item -->
+
+        <!-- If the object is a boolean, the contents will show only
+             when the value is `true` -->
+        {{for:falseValue}}
+            <li>I only show when 'falseValue' is not false. So you can't see me?!</li>
+        {{end:falseValue}}
+
+        {{for:trueValue}}
+            <li>I only show when 'trueValue' is not false. So you can see me.</li>
+        {{end:trueValue}}
+    {{end:an}}
+
+    <!-- If the object is anything other than a boolean or iterable,
+         the contents are shown only once, and
+         only if the object is not null -->
+    {{for:nullValue}}
+        <li>I only show when 'nullValue' is not null. So you can't see me?!</li>
+    {{end:nullValue}}
+</ul>
+
+<h1>Complex repeating</h1>
+<p>Here we iterate over an object, and then iterate through child objects.</p>
+{{for:nestedRepeat}}
+    <h4>{{item:name}}</h4>
+    <p>This is {{item:name}} it has child items:</p>
+    <ol>
+        {{for:item:children}}
+            <!-- 'item:' with no field name returns the item's .toString value.
+                 Useful if the child is a simple value, like in this case.
+
+                 Note that {{item:...}} *here* can only refer to items in `nestedRepeat.children`
+                 You can't access multiple levels at once. If you find you need this, copy
+                 references down from upper to lower objects in your model. -->
+            <li>{{item:}}</li>
+        {{end:item:children}}
+    </ol>
+{{end:nestedRepeat}}

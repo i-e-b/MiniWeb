@@ -10,30 +10,21 @@ import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Toast;
 
-import java.util.Objects;
-
-import e.s.miniweb.ControllerBindings;
-import e.s.miniweb.controllers.Home;
-import e.s.miniweb.template.TemplateEngine;
+// todo: this class is big. Try to simplify
 
 public class MainActivity extends Activity {
     private WebView view;
     private AppWebRouter client;
     private JsCallbackManager manager;
-    private long lastPress; // controlls double-back-to-exit timing
+    private long lastPress; // controls double-back-to-exit timing
 
     // Do start-up of the app
     @SuppressLint("SetJavaScriptEnabled")
     public void loadWebViewWithLocalClient() {
         // We're off the ui thread, so can do any start-up processes here...
-        /*try {
-            Thread.sleep(5000); // fake loading
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
 
         // hook the view to the app client and request the home page
-        client = new AppWebRouter(getAssets(), view); // <-- route definitions are in here
+        client = new AppWebRouter(getAssets()); // <-- route definitions are in here
         manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
 
         // Activate the web-view with event handlers, and kick off the landing page.
