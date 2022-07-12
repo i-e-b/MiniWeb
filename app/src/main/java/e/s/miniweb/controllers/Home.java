@@ -1,5 +1,6 @@
 package e.s.miniweb.controllers;
 
+import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.webkit.WebResourceRequest;
 
 import java.util.ArrayList;
@@ -35,6 +36,10 @@ public class Home extends ControllerBase {
         list.add(new ExampleObject("a"));
         list.add(new ExampleObject("list"));
 
+        List<NestObject> nested = new ArrayList<>();
+        nested.add(new NestObject("First child"));
+        nested.add(new NestObject("Second child"));
+
         Object model = new Object() {
             public final String an = "an";
             public final String multiple = "multiple";
@@ -44,6 +49,7 @@ public class Home extends ControllerBase {
             public final boolean falseValue = false;
             public final boolean trueValue = true;
             public final Object nullValue = null;
+            public final List<NestObject> nestedRepeat = nested;
             public final List<ExampleObject> listThing = list;
         };
 
@@ -83,6 +89,22 @@ public class Home extends ControllerBase {
 
         public ExampleObject(String msg) {
             exampleField = msg;
+        }
+    }
+
+    private class NestObject {
+        public List<String> children;
+        public String name;
+
+        public NestObject(String name){
+            this.name = name;
+
+            // shove in some sample data
+            children = new ArrayList<>();
+            children.add("one");
+            children.add("two");
+            children.add("three");
+            children.add("four");
         }
     }
 }

@@ -18,11 +18,11 @@ android {
     buildTypes {
         release {
             minifyEnabled true
-            shrinkResources true
+            //shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
-            // turn these on for smaller APK, but slower build
+            // turn these on for smaller APK, but slower build. This will also break debugging.
             //minifyEnabled true
             //shrinkResources true
             //proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'

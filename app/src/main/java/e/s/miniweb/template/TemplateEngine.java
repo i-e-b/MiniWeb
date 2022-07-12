@@ -112,7 +112,7 @@ public class TemplateEngine {
             // Any block control?
             if (line.contains("{{for:") || line.contains("{{end:")) {
                 // block control: recurse contents as new sub-documents, then skip to end of block
-                int size = recurseBlock(lineIndex, tmpl, sb);
+                int size = recurseBlock(lineIndex, tmpl, cursorItem, sb);
                 if (size > 0){
                     lineIndex += size;
                 } else{
@@ -130,11 +130,11 @@ public class TemplateEngine {
             // everything should be done now.
             sb.append(line);
         }
-        // todo: templates
+
         return sb.toString();
     }
 
-    private int recurseBlock(int startIndex, TemplateResponse tmpl, StringBuilder sb) {
+    private int recurseBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
         // get the target
         String startLine = tmpl.TemplateLines.get(startIndex).trim();
         if (! startLine.startsWith("{{") || ! startLine.endsWith("}}")) { // invalid repeat line
@@ -168,10 +168,16 @@ public class TemplateEngine {
 
         TemplateResponse subset = tmpl.cloneRange(startIndex+1, endIndex - 1);
 
-        // todo: handle `{{for:item:my_thing}}`
+        // handle `{{for:item:my_thing}}`
+        Object target = subset.Model;
+        if (fieldName.startsWith("item:")){
+            target = cursorItem;
+            fieldName = fieldName.substring(5);
+        }
+
         // now we ignore the top and bottom lines, and run everything else through `` again
         // that might come back here if there are nested 'for' blocks
-        Object items = findFieldObject(subset.Model, fieldName);
+        Object items = findFieldObject(target, fieldName);
         if (items instanceof Iterable) {
             @SuppressWarnings("rawtypes") Iterable listItems = (Iterable) items;
             for (Object item : listItems) {
@@ -226,7 +232,7 @@ public class TemplateEngine {
         sb.append(left);
 
         int closeIndex = right.indexOf("}}");
-        if (closeIndex < 1) { // hole was "{{}}", which is invalid
+        if (closeIndex < 0){
             sb.append(right);
             return sb.toString();
         }
@@ -249,6 +255,11 @@ public class TemplateEngine {
         try {
             if (model == null) return "";
             if (name == null) return "";
+
+            if (name.equals("")){ // special case: {{item:}} output the model as a string
+                return model.toString();
+            }
+
             Field field = model.getClass().getField(name);
 
             Object value = field.get(model);
@@ -263,6 +274,8 @@ public class TemplateEngine {
         try {
             if (model == null) return null;
             if (name == null) return null;
+
+            if (name.equals("")) return model; // special case {{for:}} -> use the model directly
 
             Field field = model.getClass().getField(name);
             return field.get(model);
@@ -299,7 +312,7 @@ public class TemplateEngine {
 
             return resp;
         } catch (Exception ex) {
-            // todo: write a warning page, giving some details and a 'back'|'home' button
+            // returning null will trigger an error page with a back button
             System.out.println(ex.getLocalizedMessage());
             return null;
         }
