@@ -18,14 +18,16 @@ android {
 
     buildTypes {
         release {
-            //ndk {
-            //    debugSymbolLevel = 'SYMBOL_TABLE'
-            //}
-            //minifyEnabled true
-            //shrinkResources true
-            //proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            ndk {
+                debugSymbolLevel = 'SYMBOL_TABLE'
+            }
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
+            aaptOptions.cruncherEnabled = false
+            ext.alwaysUpdateBuildId = false
         }
     }
     compileOptions {

@@ -1,17 +1,56 @@
+
+/* put a backdrop image on all pages */
+html {
+    background: url("asset://images/backdrop.png") no-repeat center center fixed;
+    background-size: cover;
+}
+
+
 /* Make all links like buttons */
 a {
     display: inline-block;
-    background-color: #00c;
+    background: linear-gradient(#77f,  #00c);
     border: 1px solid #006;
     border-radius: 5px;
     color: #fff;
     padding: 10px;
     text-decoration: none;
     margin: 2px;
+    font-size: large;
+}
+/* indent on press */
+a:active {
+    background: linear-gradient(#00a,  #55e);
 }
 
-/* put a backdrop image on all pages */
-html {
-    background: url("asset://images/backdrop.png") no-repeat center center fixed;
-    background-size: cover;
+/* Make submit button bigger */
+input[type=button],
+input[type=submit]{
+    display: inline-block;
+    background: linear-gradient(#77f,  #00c);
+    border: 1px solid #006;
+    border-radius: 5px;
+    color: #fff;
+    padding: 10px;
+    margin: 2px;
+    font-size: large;
+}
+/* indent on press */
+input[type=button]:active,
+input[type=submit]:active{
+    background: linear-gradient(#00a,  #55e);
+}
+
+/* Make text boxes bigger */
+input[type=text] {
+    font-size: large;
+    padding: 5px;
+    margin: 2px;
+    border: 1px solid #888;
+    border-radius: 5px;
+}
+/* more visible focus rectangle */
+input[type=text]:focus {
+    margin: 0px;
+    border: 3px solid #88f;
 }

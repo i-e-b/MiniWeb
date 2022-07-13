@@ -3,6 +3,7 @@ package e.s.miniweb.core;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -30,6 +31,11 @@ public class MainActivity extends Activity {
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
             view.getSettings().setJavaScriptEnabled(true);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                view.getSettings().setSafeBrowsingEnabled(false);
+            }
+            view.getSettings().setBlockNetworkLoads(false);
+
             view.setWebChromeClient(new BrowserEventListener(this));
 
             view.setWebViewClient(client);
@@ -105,7 +111,8 @@ public class MainActivity extends Activity {
 
         // setup the web view
         view = new WebView(this);
-        this.setContentView(view, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        this.setContentView(view, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         // Do any heavy lifting out on a non-ui thread, so
         // the 'loading' message gets a chance to update

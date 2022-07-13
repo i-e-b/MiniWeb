@@ -8,6 +8,20 @@ import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.template.TemplateEngine;
 import e.s.miniweb.core.template.TemplateResponse;
 
+/*
+    This controller provides the app://home path
+    The app://home/index method is where your app will start.
+
+    You could put log-in screens here etc.
+
+    There is no requirement to name controller classes
+    the same as the url routing name, but it can be
+    confusing if you don't.
+
+    It's not required to `extends ControllerBase`,
+    but it is helpful.
+ */
+
 @SuppressWarnings("unused")
 public class Home extends ControllerBase {
     /**
@@ -15,7 +29,8 @@ public class Home extends ControllerBase {
      * The constructor should be called in ControllerBindings::BindAllControllers()
      */
     public Home() {
-        TemplateEngine.BindMethod("home", "index", this::index);
+        String controller = "home";
+        TemplateEngine.BindMethod(controller, "index", this::index);
     }
 
     /**

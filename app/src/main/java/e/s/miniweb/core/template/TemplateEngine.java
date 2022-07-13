@@ -16,8 +16,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-// todo: this class is big. Try to simplify
-
 public class TemplateEngine {
     // composite name => call-back; Composite is controller | method
     private static final Map<String, WebMethod> responders = new HashMap<>();

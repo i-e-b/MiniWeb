@@ -7,8 +7,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
+import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.models.FullNameModel;
 import e.s.miniweb.models.NestedObjectModel;
@@ -19,6 +19,13 @@ import e.s.miniweb.core.template.TemplateResponse;
 /*
     This controller is used to give some various examples.
     Feel free to delete when building your app.
+
+    There is no requirement to name controller classes
+    the same as the url routing name, but it can be
+    confusing if you don't.
+
+    It's not required to `extends ControllerBase`,
+    but it is helpful.
  */
 public class TestController extends ControllerBase {
     /**
@@ -35,6 +42,8 @@ public class TestController extends ControllerBase {
         TemplateEngine.BindMethod(controller, "paramsAndForms", this::paramsAndForms);
         TemplateEngine.BindMethod(controller, "paramsAndForms2", this::paramsAndForms2);
         TemplateEngine.BindMethod(controller, "paramsAndForms3", this::paramsAndForms3);
+        TemplateEngine.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
+        TemplateEngine.BindMethod(controller, "emoji", this::emoji);
     }
 
     private String lastName = "";
@@ -78,6 +87,20 @@ public class TestController extends ControllerBase {
         return Page("test/paramsAndForms3", model);
     }
 
+    // this one gets the data from JavaScript
+    private TemplateResponse paramsAndForms4(Map<String, String> parameters, WebResourceRequest request) {
+        Object model = new Object(){
+            public final String Name = Statics.formData.get("demoForm");
+        };
+        return Page("test/paramsAndForms3", model);
+    }
+
+    /**
+     * Display a reference page full of emoji supported by Android
+     */
+    private TemplateResponse emoji(Map<String, String> params, WebResourceRequest request) {
+        return Page("test/emoji", null);
+    }
 
     /**
      * Demonstrate what happens when a web method crashes

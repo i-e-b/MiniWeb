@@ -13,18 +13,36 @@ public class JsCallbackManager {
         this.mainActivity = mainActivity;
     }
 
+    /*
+        Add your own methods here.
+     */
+
+    // example for extracting data from forms via JavaScript
+    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
+    public void storeForm(String formName, String values) {
+        Statics.formData.put(formName, values);
+    }
+
+
+    /*
+    These methods are used to drive the UI, and should not be modified
+     */
+
+    //region Critical methods
     @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
     public void homepageLoaded() {
         mainActivity.HomepageLoaded();
     }
 
-    @JavascriptInterface
+    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
     public void showTitle(String message) {
         mainActivity.PopupTitle(message);
     }
 
-    @JavascriptInterface
+    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
     public void clearHistory() {
         mainActivity.clearHistory();
     }
+    //endregion
+
 }
