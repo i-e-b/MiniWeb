@@ -98,3 +98,11 @@ You can loop over an item in a loop using `{{for:item:...}}`
     </ol>
 {{end:accounts}}
 ```
+
+## Hot Reload
+
+Hot reload is not working yet, but should be coming soon(ish)
+
+## Other bits
+
+Test cert jks password: deploy.jks
