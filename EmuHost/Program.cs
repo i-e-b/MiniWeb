@@ -11,39 +11,23 @@ internal static class Program
     public const string HostUpMsg = "ANDROID_EMU_HOST_V1";
     
     private static volatile bool _running;
+    private static string? _basePath;
 
-    private static void DoRouting(string url, HttpListenerContext ctx)
+    public static int Main(string[]? args)
     {
-        switch (url)
+        if (args is null || args.Length < 1)
         {
-            case "/":
-            {
-                SendOk(ctx, WelcomePage());
-                break;
-            }
-
-            case "/host":
-            {
-                SendOk(ctx, Encoding.UTF8.GetBytes(HostUpMsg));
-                break;
-            }
-
-            case "/time":
-            {
-                SendOk(ctx, Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
-                break;
-            }
-
-            default:
-            {
-                SendNotFound(ctx, Encoding.UTF8.GetBytes(NotFoundMsg));
-                break;
-            }
+            Console.WriteLine("Please specify the Android app \"assets\" folder to watch.");
+            return 1;
         }
-    }
-    
-    public static void Main()
-    {
+
+        _basePath = string.Join(" ", args);
+        if (!Directory.Exists(_basePath))
+        {
+            Console.WriteLine($"Path at \"{_basePath}\" was not found, or could not be accessed (check permissions?)");
+            return 1;
+        }
+
         Console.WriteLine("Starting little web hook...");
 
         _running = true;
@@ -67,16 +51,16 @@ internal static class Program
                 try
                 {
                     var url = ctx.Request.RawUrl ?? "<null>";
-                    Console.WriteLine($"HTTP listener responding to {url}");
-
                     Console.WriteLine($"Request '{url}'");
 
-                    DoRouting(url, ctx);
+                    var kind = DoRouting(url, ctx);
+                    
+                    Console.WriteLine(kind.ToString());
                 }
                 catch (Exception innerEx)
                 {
-                    Console.WriteLine("Responder error: "+innerEx);
-                    SendError(ctx, Encoding.UTF8.GetBytes(HostErrorMsg));
+                    Console.WriteLine("Responder error: " + innerEx);
+                    SendError(ctx, HostErrorMsg);
                 }
                 finally
                 {
@@ -89,8 +73,65 @@ internal static class Program
                 Thread.Sleep(1000);
             }
         }
+        Console.WriteLine("Normal exit");
+        return 0;
     }
 
+    private static ContextResult DoRouting(string url, HttpListenerContext ctx)
+    {
+        var bits = url.Split(new[] { '/' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (bits.Length < 1) return SendOk(ctx, "text/html; charset=utf-8", WelcomePage());
+
+        switch (bits[0])
+        {
+            case "host": return SendOk(ctx, "text/plain", Encoding.UTF8.GetBytes(HostUpMsg));
+
+            case "time": return SendOk(ctx, "text/plain", Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
+
+            case "assets":
+            {
+                if (string.IsNullOrWhiteSpace(_basePath)) return SendError(ctx, "Invalid base path");
+
+                var path = Path.Combine(_basePath, string.Join(Path.DirectorySeparatorChar, bits.Skip(1)));
+                return !File.Exists(path)
+                    ? SendNotFound(ctx, $"Not found: {path}")
+                    : SendOk(ctx, GuessMime(path), File.ReadAllBytes(path));
+            }
+
+            case "touched":
+            {
+                if (string.IsNullOrWhiteSpace(_basePath)) return SendError(ctx, "Invalid base path");
+
+                var path = Path.Combine(_basePath, string.Join(Path.DirectorySeparatorChar, bits.Skip(1)));
+                if (!File.Exists(path)) return SendNotFound(ctx, $"Not found: {path}");
+                
+                var time = new FileInfo(path).LastWriteTimeUtc.ToString("yyyy-MM-dd HH:mm:ss");
+                return SendOk(ctx, "text/plain", Encoding.UTF8.GetBytes(time));
+            }
+
+            default:
+            {
+                return SendNotFound(ctx, NotFoundMsg);
+            }
+        }
+    }
+    
+    private static string GuessMime(string path) {
+        if (path.EndsWith(".css")) return "text/css";
+        if (path.EndsWith(".html")) return "text/html; charset=utf-8";
+        if (path.EndsWith(".js")) return "application/javascript";
+
+        if (path.EndsWith(".svg")) return "image/svg+xml";
+
+        if (path.EndsWith(".png")) return "image/png";
+        if (path.EndsWith(".webp")) return "image/webp";
+        if (path.EndsWith(".jpg")) return "image/jpeg";
+        if (path.EndsWith(".jpeg")) return "image/jpeg";
+        if (path.EndsWith(".gif")) return "image/gif";
+
+        return "application/octet-stream";
+    }
+    
     private static byte[] WelcomePage()
     {
         return T.g("html")[
@@ -107,31 +148,43 @@ internal static class Program
         ].ToBytes(Encoding.UTF8);
     }
 
-    private static void SendOk(HttpListenerContext ctx, byte[] bytes)
+    private static ContextResult SendOk(HttpListenerContext ctx, string contentType, byte[] bytes)
     {
         ctx.Response.StatusCode = 200;
         ctx.Response.StatusDescription = "OK";
-        ctx.Response.AddHeader("Content-Type", "text/html");
+        ctx.Response.AddHeader("Content-Type", contentType);
         ctx.Response.OutputStream.Write(bytes);
         ctx.Response.OutputStream.Flush();
+        return ContextResult.Ok;
     }
     
-    private static void SendNotFound(HttpListenerContext ctx, byte[] bytes)
+    private static ContextResult SendNotFound(HttpListenerContext ctx, string message)
     {
+        Console.WriteLine($"Warning: {message}");
+
         ctx.Response.StatusCode = 404;
         ctx.Response.StatusDescription = "Not Found";
         ctx.Response.AddHeader("Content-Type", "text/html");
-        ctx.Response.OutputStream.Write(bytes);
+        ctx.Response.OutputStream.Write((byte[]?)Encoding.UTF8.GetBytes(message));
         ctx.Response.OutputStream.Flush();
+        return ContextResult.NotFound;
     }
     
     
-    private static void SendError(HttpListenerContext ctx, byte[] bytes)
+    private static ContextResult SendError(HttpListenerContext ctx, string message)
     {
+        Console.WriteLine($"Error: {message}");
+
         ctx.Response.StatusCode = 500;
         ctx.Response.StatusDescription = "Server Error";
         ctx.Response.AddHeader("Content-Type", "text/html");
-        ctx.Response.OutputStream.Write(bytes);
+        ctx.Response.OutputStream.Write((byte[]?)Encoding.UTF8.GetBytes(message));
         ctx.Response.OutputStream.Flush();
+        return ContextResult.Error;
     }
+}
+
+internal enum ContextResult
+{
+    Ok,NotFound,Error
 }

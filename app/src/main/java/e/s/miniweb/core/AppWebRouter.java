@@ -16,6 +16,7 @@ import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.template.TemplateEngine;
 
 public class AppWebRouter extends WebViewClient {
+    private final String HtmlMime = "text/html; charset=utf-8";
     final private TemplateEngine template;
     private final AssetManager assets;
     public boolean clearHistory;
@@ -82,7 +83,7 @@ public class AppWebRouter extends WebViewClient {
             Uri url = request.getUrl();
             if (url == null){
                 pageResult.data = errorPage("Invalid url: null", "?", "?");
-                pageResult.mimeType = "text/html";
+                pageResult.mimeType = HtmlMime;
                 return pageResult;
             }
             // guess controller and method in case of crash
@@ -92,13 +93,13 @@ public class AppWebRouter extends WebViewClient {
             String scheme = request.getUrl().getScheme(); // can use to direct out
             if (scheme == null){
                 pageResult.data = errorPage("Invalid url: "+request.getUrl().toString(), controller, method);
-                pageResult.mimeType = "text/html";
+                pageResult.mimeType = HtmlMime;
                 return pageResult;
 
             } else if (Objects.equals(scheme, "app")) { // controller pages
 
                 pageResult.data = getControllerResponse(request);
-                pageResult.mimeType = "text/html";
+                pageResult.mimeType = HtmlMime;
                 return pageResult;
 
             } else if (scheme.equals("asset")) {
@@ -112,20 +113,20 @@ public class AppWebRouter extends WebViewClient {
 
             } else {
                 pageResult.data = errorPage("Unknown url type: "+scheme, controller, method);
-                pageResult.mimeType = "text/html";
+                pageResult.mimeType = HtmlMime;
                 return pageResult;
             }
 
         } catch (Exception ex) {
             pageResult.data = errorPage(ex.getMessage(), controller, method);
-            pageResult.mimeType = "text/html";
+            pageResult.mimeType = HtmlMime;
             return pageResult;
         }
     }
 
     private String guessMime(String path) {
         if (path.endsWith(".css")) return "text/css";
-        if (path.endsWith(".html")) return "text/html";
+        if (path.endsWith(".html")) return HtmlMime;
         if (path.endsWith(".js")) return "application/javascript";
 
         if (path.endsWith(".svg")) return "image/svg+xml";
