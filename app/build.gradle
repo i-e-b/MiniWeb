@@ -41,5 +41,6 @@ android {
             }
         }
     }
+    namespace 'e.s.miniweb'
 }
 
