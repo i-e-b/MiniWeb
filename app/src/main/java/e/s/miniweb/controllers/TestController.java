@@ -44,6 +44,7 @@ public class TestController extends ControllerBase {
         TemplateEngine.BindMethod(controller, "paramsAndForms3", this::paramsAndForms3);
         TemplateEngine.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
         TemplateEngine.BindMethod(controller, "emoji", this::emoji);
+        TemplateEngine.BindMethod(controller, "svg-embed", this::svgEmbed);
     }
 
     private String lastName = "";
@@ -100,6 +101,14 @@ public class TestController extends ControllerBase {
      */
     private TemplateResponse emoji(Map<String, String> params, WebResourceRequest request) {
         return Page("test/emoji", null);
+    }
+
+
+    /**
+     * Display a page that loads an `img` tag with SVG source
+     */
+    private TemplateResponse svgEmbed(Map<String, String> params, WebResourceRequest request) {
+        return Page("test/svg-embed", null);
     }
 
     /**

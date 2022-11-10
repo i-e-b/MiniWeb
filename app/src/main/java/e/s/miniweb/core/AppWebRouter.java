@@ -133,6 +133,8 @@ public class AppWebRouter extends WebViewClient {
         if (path.endsWith(".html")) return "text/html";
         if (path.endsWith(".js")) return "application/javascript";
 
+        if (path.endsWith(".svg")) return "image/svg+xml";
+
         if (path.endsWith(".png")) return "image/png";
         if (path.endsWith(".webp")) return "image/webp";
         if (path.endsWith(".jpg")) return "image/jpeg";
