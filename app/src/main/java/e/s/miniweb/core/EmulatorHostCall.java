@@ -17,7 +17,7 @@ public class EmulatorHostCall {
     private static final String HOST_BASE = "http://10.0.2.2:1310/";
 
     // Status strings we expect from the host
-    private static final String HOST_UP_MSG = "ANDROID_EMU_HOST";
+    private static final String HOST_UP_MSG = "ANDROID_EMU_HOST_V1";
     private static final String HOST_NOT_FOUND_MSG = "NOT_FOUND";
     private static final String HOST_ERROR_MSG = "HOST_ERROR";
 

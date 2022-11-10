@@ -8,7 +8,7 @@ internal static class Program
 {
     public const string NotFoundMsg = "NOT_FOUND";
     public const string HostErrorMsg = "HOST_ERROR";
-    public const string HostUpMsg = "ANDROID_EMU_HOST";
+    public const string HostUpMsg = "ANDROID_EMU_HOST_V1";
     
     private static volatile bool _running;
 
@@ -30,7 +30,7 @@ internal static class Program
 
             case "/time":
             {
-                SendOk(ctx, Encoding.UTF8.GetBytes(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")));
+                SendOk(ctx, Encoding.UTF8.GetBytes(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")));
                 break;
             }
 

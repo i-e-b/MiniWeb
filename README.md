@@ -99,10 +99,71 @@ You can loop over an item in a loop using `{{for:item:...}}`
 {{end:accounts}}
 ```
 
-## Hot Reload
+## Emulator Host and Hot Reload
 
 Hot reload is not working yet, but should be coming soon(ish)
 
+The Android Emulator connects to the host over IP address `10.0.2.2`.
+The MiniWeb class at `e.s.miniweb.core.EmulatorHostCall` has a few methods to make
+HTTP calls to the host over this address (with very short connection timeout, so
+that failures don't pause the app significantly).
+
+If there is a HTTP server listening on port `1310`, MiniWeb will try to communicate
+with it using a very simple protocol.
+
+### TinyWebHook
+
+There is a `TinyWebHook` dotnet app that supports the MiniWeb Hot-Host Protocol.
+`TinyWebHook` also supports a `/` path for test use.
+
+This must be run with administrator access under Windows, or with http binding
+access on other systems (`root` should be ok for development).
+
+Call `TinyWebHook` with the path to your Android app's `assets` folder.
+(e.g. `C:\gits\MiniWeb\app\src\main\assets`)
+
+### Hot-Host Protocol
+
+#### Version
+
+`http://10.0.2.2:1310/host`
+
+This should return `ANDROID_EMU_HOST_V1`; If this path
+fails or returns a different value, Hot Reload will **not** be active.
+This is agreed in code at `e.s.miniweb.core.EmulatorHostCall#HOST_UP_MSG` and `TinyWebHook.Program.HostUpMsg`
+
+#### Time
+
+`http://10.0.2.2:1310/time`
+
+This should return the current server time as **UTC**
+in the format `yyyy-MM-dd HH:mm:ss`.
+
+#### Assets
+
+`http://10.0.2.2:1310/assets/{path to asset}`
+
+This should return the file contents for the asset requested. The path is allowed
+to be any path into the assets folder.
+The path may **not** contain `..` or `.` elements.
+
+* If the host returns a 200 status, the content will be used instead of the content in the APK of the running Android app.
+* If the host returns a 404 status, the file will be treated as removed, regardless if its presence in the APK.
+* If the host returns any other status, the file will be loaded from the APK as normal.
+
+#### Last touch
+
+`http://10.0.2.2:1310/touched/{path to asset}`
+
+This should return the modified date of the file requested.
+The Android app will request and store this when a file is loaded through the host, and
+will periodically request again while the page is being displayed.
+
+* If the host returns 200, and the date has **not** changed, the Android app takes no action
+* If the host returns 200, and the date **has** changed, the Android app will try to reload the current page with existing data on the updated template
+* If the host returns any other code, the Android app takes no action.
+
 ## Other bits
 
-Test cert jks password: deploy.jks
+Test cert jks password: `deploy.jks`
+Do **not** use this certificate for your app, it is public and should only be used for testing.
