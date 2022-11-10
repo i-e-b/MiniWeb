@@ -1,15 +1,20 @@
 package e.s.miniweb.controllers;
 
+import android.annotation.SuppressLint;
 import android.webkit.WebResourceRequest;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
+import e.s.miniweb.core.EmulatorHostCall;
 import e.s.miniweb.models.FullNameModel;
 import e.s.miniweb.models.NestedObjectModel;
 import e.s.miniweb.core.template.TemplateEngine;
@@ -45,6 +50,7 @@ public class TestController extends ControllerBase {
         TemplateEngine.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
         TemplateEngine.BindMethod(controller, "emoji", this::emoji);
         TemplateEngine.BindMethod(controller, "svg-embed", this::svgEmbed);
+        TemplateEngine.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
     }
 
     private String lastName = "";
@@ -94,6 +100,30 @@ public class TestController extends ControllerBase {
             public final String Name = Statics.formData.get("demoForm");
         };
         return Page("test/paramsAndForms3", model);
+    }
+
+    /**
+     * Display a reference page full of emoji supported by Android
+     */
+    private TemplateResponse emulatorAndHostTests(Map<String, String> params, WebResourceRequest request) {
+        Object model = new Object(){
+            public final String IsConnected = EmulatorHostCall.hostIsAvailable() ? "connected" : "not available";
+            public final String HostTime = EmulatorHostCall.queryHost("time");
+            public final String SelfTime = getIsoDateNow();
+        };
+
+        return Page("test/emuHost", model);
+    }
+
+    private static String getIsoDateNow(){
+        Date date = new Date();
+        SimpleDateFormat sdf;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault(Locale.Category.FORMAT));
+        } else {
+            sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        }
+        return sdf.format(date);
     }
 
     /**

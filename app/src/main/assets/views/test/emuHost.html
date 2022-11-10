@@ -1,0 +1,39 @@
+<h1>Emulator and Host Tests</h1>
+<a href="app://home">Home</a>
+<h1>Emulator host {{IsConnected}}</h1>
+<p>
+    When the app is running in an emulator, we <i>should</i> be
+    able to access services running on the host machine.
+</p>
+<p>
+    That means, if you're running this on your development machine,
+    we can contact the host.
+</p>
+<p>
+    This might give us the ability to 'hot reload' the current page.
+    As long as we keep hold of the original model, we could re-run
+    the templating and display step if a file-change poll signalled
+    us to. We might also be able to request asset files from the
+    host machine, which would allow css, templates, or images to be
+    hot loaded.
+</p>
+<p>
+    If we were attached to an on-device service (see <i>MiniTwins</i> project),
+    then we could run in production like this, syncing templates and JS as
+    required on the fly. Any Java file changes would probably need to be updated
+    by APK as usual -- unless we can find a way to fiddle that too.
+</p>
+Time when page rendered:
+<ul>
+    <li>Android app: {{SelfTime}}</li>
+    <li>Host PC: {{HostTime}}</li>
+</ul>
+Time on host now: <span id="timeNow">Waiting</span>
+
+<script>
+    function checkTime(){
+        var result = manager.queryHost("time") || "not connected?"; // read from emulation host, if available
+        document.getElementById('timeNow').innerText = result;
+    }
+    setInterval(checkTime, 1000);
+</script>
