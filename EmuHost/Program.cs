@@ -35,7 +35,7 @@ internal static class Program
 
         var listener = new HttpListener();
         listener.IgnoreWriteExceptions = true;
-        listener.Prefixes.Add("ht"+"tp://+:1310/");
+        listener.Prefixes.Add("ht"+"tp://+:1310/"); // Comment this out to run as low-privilege user. Hot-load will not work.
         listener.Prefixes.Add("ht"+"tp://127.0.0.1:1310/");
         listener.Start();
 
@@ -136,13 +136,18 @@ internal static class Program
     {
         return T.g("html")[
             T.g("head")[
-                T.g("title")["Tiny web hook"]
+                T.g("title")["MiniWeb Hot-Loader"]
             ],
             T.g("body")[
-                T.g("h1")["Tiny Web Hook"],
+                T.g("h1")["MiniWeb Hot-Loader"],
                 T.g("p")[
-                    "This is a little demo app that listens on localhost. ",
-                    "If we are lucky, we can get the Android emulator to call it?"
+                    "This site is a companion to the MiniWeb Android template library. ",
+                    "If you update files while the Android app is running in an emulator on this PC, ",
+                    "the pages should auto-reload."
+                ],
+                T.g("p")[
+                    "Currently monitoring assets at ",
+                    T.g("code")[_basePath ?? "<invalid>"]
                 ]
             ]
         ].ToBytes(Encoding.UTF8);
@@ -169,7 +174,6 @@ internal static class Program
         ctx.Response.OutputStream.Flush();
         return ContextResult.NotFound;
     }
-    
     
     private static ContextResult SendError(HttpListenerContext ctx, string message)
     {
