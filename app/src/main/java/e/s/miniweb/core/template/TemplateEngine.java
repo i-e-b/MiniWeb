@@ -1,12 +1,15 @@
 package e.s.miniweb.core.template;
 
 import android.content.res.AssetManager;
+import android.util.Log;
 import android.webkit.WebResourceRequest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,11 +19,20 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import e.s.miniweb.core.EmulatorHostCall;
+
 public class TemplateEngine {
+    private static final String TAG = "TemplateEngine";
+
     // composite name => call-back; Composite is controller | method
     private static final Map<String, WebMethod> responders = new HashMap<>();
     private static final Set<Object> controllers = new HashSet<>();
     private final AssetManager assets;
+
+    private static TemplateResponse lastPageRendered; // supports hot-reload
+    private static String lastPageChangeDate;
+
+    public static boolean TryLoadFromHost = false; // part of the hot-load system.
 
     public TemplateEngine(AssetManager assets) {
         // Note: Is Java's reflection is so crap we can't pre-load class info in
@@ -44,8 +56,55 @@ public class TemplateEngine {
         controllers.add(o);
     }
 
-    // Call out to the controller, get a template and model object.
-    // Fill out template, then return the resulting document as a string.
+    /** If true, the last rendered page is available for hot-reload */
+    public static String GetHotReloadPath() {
+        if (lastPageRendered == null) return "";
+        return lastPageRendered.TemplatePath;
+    }
+
+    /** If true, the last rendered page is available for hot-reload */
+    public static boolean CanHotReload(String filePath, String changeDate) {
+        if (lastPageRendered == null) {
+            lastPageChangeDate = null;
+            return false; // nothing to hot-load
+        }
+        if (lastPageChangeDate == null){ // haven't captured original date
+            lastPageChangeDate = changeDate;
+            return false;
+        }
+        if (lastPageChangeDate.equals(changeDate)) return false; // file not changed
+
+        Log.i("HOTRELOAD", "Comparing '"+filePath+"' to '"+lastPageRendered.TemplatePath+" and "+changeDate+" to "+lastPageChangeDate);
+        lastPageChangeDate = changeDate;
+        return lastPageRendered != null && Objects.equals(filePath, lastPageRendered.TemplatePath);
+    }
+    public static String GetHotController(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Controller;
+    }public static String GetHotMethod(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Method;
+    }public static String GetHotParams(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Params;
+    }
+
+    /** Clear any previous hot-reload state */
+    public void ClearReload(){
+        lastPageRendered = null;
+        lastPageChangeDate = null;
+    }
+
+    /** Just do the render phase of `Run` */
+    public String RunHotReload() {
+        try {
+            readAsset("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            return transformTemplate(lastPageRendered, null);
+        } catch (Exception ex){
+            return null;
+        }
+    }
+
+    /** Call out to the controller, get a template and model object.
+     * Fill out template, then return the resulting document as a string.
+     */
     public String Run(String controller, String method, String params, WebResourceRequest request) throws Exception {
         String composite = controller+"|="+method;
 
@@ -60,12 +119,22 @@ public class TemplateEngine {
             return null;
         }
 
+        // 'Do' the page action.
+        // This results in a template and the data to go with it
         TemplateResponse tmpl = getDocTemplate(request, params, wm);
 
         if (tmpl.RedirectUrl != null){
             return redirectPage(tmpl);
         }
 
+        // ready to render the final page.
+        // if we wanted to 'refresh', then `tmpl` is what we'd need
+        lastPageRendered = tmpl;
+        lastPageRendered.Controller = controller;
+        lastPageRendered.Method = method;
+        lastPageRendered.Params = params;
+
+        // do the render!
         return transformTemplate(tmpl, null);
     }
 
@@ -100,6 +169,7 @@ public class TemplateEngine {
     private String redirectPage(TemplateResponse tmpl) {
         return internalTemplate("redirect.html", new RedirectModel(tmpl));
     }
+
 
     private static class RedirectModel {
         public final String RedirectUrl;
@@ -370,11 +440,28 @@ public class TemplateEngine {
     }
 
     private void readAsset(String fileName, TemplateResponse resp) throws IOException {
-        InputStream is = assets.open(fileName);
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+        resp.TemplateLines.clear();
 
+        // If the hot-load host is available, try to read the file from there
+        Reader rdr = null;
+        InputStream is = null;
+        if (TryLoadFromHost){
+            Log.i(TAG, "Try host load: assets/"+fileName);
+            String result = EmulatorHostCall.queryHost("assets/" + fileName);
+            if (!result.equals("")) {
+                rdr = new StringReader(result);
+            }
+        }
+
+        // If the file didn't load, or hot-loading is off, load from APK
+        if (rdr == null) {
+            is = assets.open(fileName);
+            rdr = new InputStreamReader(is);
+        }
+
+        // Now read file lines into the template
+        BufferedReader br = new BufferedReader(rdr);
         String readLine;
-
         try {
             // While the BufferedReader readLine is not null
             while ((readLine = br.readLine()) != null) {
@@ -382,7 +469,7 @@ public class TemplateEngine {
             }
 
             // Close the InputStream and BufferedReader
-            is.close();
+            if (is != null) is.close();
             br.close();
 
         } catch (Exception e) {

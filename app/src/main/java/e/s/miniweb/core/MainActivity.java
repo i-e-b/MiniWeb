@@ -4,6 +4,10 @@ import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -17,8 +21,11 @@ import android.webkit.WebView;
 import android.widget.Toast;
 
 import java.io.File;
+import java.util.Calendar;
+import java.util.Objects;
 
 import e.s.miniweb.JsCallbackManager;
+import e.s.miniweb.core.template.TemplateEngine;
 
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
@@ -28,16 +35,31 @@ public class MainActivity extends Activity {
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
 
+    // Hot reload
+    private static final int hotReloadInterval = 1000; // 1 second
+    private Handler hotReloadHandler;
+
     /** Do start-up of the web-app
      * This is mostly hooking up the views, updating settings,
      * then calling the homepage */
     @SuppressLint("SetJavaScriptEnabled")
     public void loadWebViewWithLocalClient() {
         // We're off the ui thread, so can do any start-up processes here...
+        Looper.prepare();
 
         // hook the view to the app client and request the home page
         client = new AppWebRouter(getAssets()); // <-- route definitions are in here
         manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
+
+        // Try to contact the hot-reload service.
+        // Run the helper like `.\TinyWebHook.exe "C:\gits\MiniWeb\app\src\main\assets"`
+        if (EmulatorHostCall.hostIsAvailable()) {
+            // Set a timer running that will try to reload pages if the source changes.
+            hotReloadHandler = new Handler();
+            startHotloadRepeater();
+        } else {
+            Log.i(TAG, "Emulator host service did not respond. Hot reload not available");
+        }
 
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
@@ -60,6 +82,7 @@ public class MainActivity extends Activity {
             // send the view to home page, with a special flag to say this is the first page since app start.
             view.loadUrl("app://home"); // we can play fast-and-loose with the url structure.
         });
+        Looper.loop();
     }
 
     /** Handle back button.
@@ -160,6 +183,18 @@ public class MainActivity extends Activity {
         new Thread(this::loadWebViewWithLocalClient).start();
     }
 
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopHotloadRepeater();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        if (hotReloadHandler != null) startHotloadRepeater();
+    }
+
     /**
      * The target audience are on constrained devices, and
      * we generally favor small size over best speed.
@@ -167,15 +202,52 @@ public class MainActivity extends Activity {
      * cache junk as possible.
      */
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy(){
+        super.onDestroy();
+        stopHotloadRepeater();
         cleanAllCacheFiles();
     }
 
-    @Override
-    protected void onDestroy(){
-        super.onDestroy();
-        cleanAllCacheFiles();
+    Runnable mStatusChecker = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                String tmplPath = TemplateEngine.GetHotReloadPath();
+                if (Objects.equals(tmplPath, "")) return;
+
+                String path = "touched/views/" + tmplPath + ".html";
+                String modifiedDate = EmulatorHostCall.queryHost(path);
+
+                boolean doReload = TemplateEngine.CanHotReload(tmplPath, modifiedDate);
+
+                if (doReload){
+                    TemplateEngine.TryLoadFromHost = true; // make sure it's switched on
+
+                    // TODO: make sure we're only re-rendering, and not calling the controller again.
+                    client.ExpectHotReload(
+                            TemplateEngine.GetHotController(),
+                            TemplateEngine.GetHotMethod(),
+                            TemplateEngine.GetHotParams()
+                            );
+
+                    runOnUiThread(()-> {
+                        view.reload(); // ???
+                    });
+                }
+            } finally {
+                hotReloadHandler.postDelayed(mStatusChecker, hotReloadInterval); // tick again if awake
+            }
+        }
+    };
+
+    void startHotloadRepeater() {
+        Log.i(TAG, "Starting looper");
+        mStatusChecker.run();
+    }
+
+    void stopHotloadRepeater() {
+        hotReloadHandler.removeCallbacks(mStatusChecker);
+        Log.i(TAG, "Stopping looper");
     }
 
     private void cleanAllCacheFiles() {

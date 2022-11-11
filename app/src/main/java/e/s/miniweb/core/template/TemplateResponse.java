@@ -3,6 +3,10 @@ package e.s.miniweb.core.template;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * The path to a document template, and the model data to go in it.
+ * This is all we need to render a final page.
+ */
 public class TemplateResponse {
     public Object Model;
     public String TemplatePath;
@@ -16,6 +20,15 @@ public class TemplateResponse {
     // Internal
     public List<String> TemplateLines;
 
+    // These are used to match a refresh to a hot-reload
+    public String Controller;
+    public String Method;
+    public String Params;
+
+    /**
+     * Duplicate lines in a template.
+     * Used for repeating {for:} blocks
+     */
     public TemplateResponse cloneRange(int startIndex, int endIndex) {
         TemplateResponse result = new TemplateResponse();
 

@@ -72,6 +72,7 @@ public class AppWebRouter extends WebViewClient {
         PageResult pageString = getResultContent(request);
 
         if (pageString == null){ // the routing did not work. Pass up to system
+            template.ClearReload();
             return super.shouldInterceptRequest(view, request);
         }
 
@@ -100,6 +101,7 @@ public class AppWebRouter extends WebViewClient {
             if (url == null){
                 pageResult.data = errorPage("Invalid url: null", "?", "?");
                 pageResult.mimeType = HtmlMime;
+                pageResult.hotReloadCandidate = false;
                 return pageResult;
             }
             // guess controller and method in case of crash
@@ -110,12 +112,13 @@ public class AppWebRouter extends WebViewClient {
             if (scheme == null){
                 pageResult.data = errorPage("Invalid url: "+request.getUrl().toString(), controller, method);
                 pageResult.mimeType = HtmlMime;
+                pageResult.hotReloadCandidate = false;
                 return pageResult;
 
             } else if (Objects.equals(scheme, "app")) { // controller pages
-
-                pageResult.data = getControllerResponse(request);
+                pageResult.data = getControllerResponse(request); // Run the controller & template engine
                 pageResult.mimeType = HtmlMime;
+                pageResult.hotReloadCandidate = true;
                 return pageResult;
 
             } else if (scheme.equals("asset")) { // request for a file stored in the APK
@@ -125,6 +128,7 @@ public class AppWebRouter extends WebViewClient {
 
                 pageResult.rawData = getRawAsset(path);
                 pageResult.mimeType = guessMime(path);
+                pageResult.hotReloadCandidate = false;
                 return pageResult;
 
 
@@ -134,13 +138,76 @@ public class AppWebRouter extends WebViewClient {
             } else {
                 pageResult.data = errorPage("Unknown url type: "+scheme, controller, method);
                 pageResult.mimeType = HtmlMime;
+                pageResult.hotReloadCandidate = false;
                 return pageResult;
             }
 
         } catch (Exception ex) {
             pageResult.data = errorPage(ex.getMessage(), controller, method);
             pageResult.mimeType = HtmlMime;
+            pageResult.hotReloadCandidate = false;
             return pageResult;
+        }
+    }
+
+    /**
+     * Render a page through a controller method
+     */
+    private String getControllerResponse(WebResourceRequest request) throws Exception {
+        String pageString;
+        String controller = request.getUrl().getHost();
+        String method = request.getUrl().getPath();
+        if (method == null) method = "";
+        if (method.startsWith("/")) method = method.substring(1);
+        if (method.equals("")) method = "index";
+        String params = request.getUrl().getQuery();
+
+        // Check for 'expect hot reload' here
+        String response = null;
+        if (Objects.equals(controller, hotController) && method.equals(hotMethod) && Objects.equals(params, hotParams)) {
+            // This is a hot reload. Don't actually run the template.
+            response = template.RunHotReload();
+            Log.i(TAG, "Doing hot-reload");
+        }
+
+        // Either a normal call, or hot reload failed.
+        if (response == null) {
+            // Call the controller for a page render
+            response = template.Run(controller, method, params, request);
+        }
+
+        ClearHotLoad();
+
+        if (response == null) {
+            // Output an error page
+            pageString = errorPage("Missing page", controller, method);
+        } else if (response.startsWith("<!doctype html>") || response.startsWith("<html")) {
+            pageString = response; // template is for a complete doc. Dev is responsible for styles etc.
+        } else {
+            // We got a body fragment. Wrap the response in a default document and deliver
+            pageString =
+                    "<!doctype html><html><head><meta charset=\"UTF-8\"><link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\"></head>" +
+                    "<body>" + response + "</body></html>";
+        }
+
+        return pageString;
+    }
+
+    private String errorPage(String message, String controller, String method) {
+        //noinspection unused
+        ErrorModel model = new ErrorModel();
+        model.Controller = controller;
+        model.Message = message;
+        model.Method = method;
+        return template.internalTemplate("error.html", model);
+    }
+
+    private InputStream getRawAsset(String path) {
+        try {
+            return assets.open(path);
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
+            return null;
         }
     }
 
@@ -160,39 +227,18 @@ public class AppWebRouter extends WebViewClient {
         return "application/octet-stream";
     }
 
-    private String getControllerResponse(WebResourceRequest request) throws Exception {
-        String pageString;
-        String controller = request.getUrl().getHost();
-        String method = request.getUrl().getPath();
-        if (method == null) method = "";
-        if (method.startsWith("/")) method = method.substring(1);
-        if (method.equals("")) method = "index";
-        String params = request.getUrl().getQuery();
-
-        String response = template.Run(controller, method, params, request);
-
-        if (response == null) {
-            // Output an error page
-            pageString = errorPage("Missing page", controller, method);
-        } else if (response.startsWith("<!doctype html>") || response.startsWith("<html")) {
-            pageString = response; // template is for a complete doc. Dev is responsible for styles etc.
-        } else {
-            // We got a body fragment. Wrap the response in a default document and deliver
-            pageString =
-                    "<!doctype html><html><head><link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\"></head>" +
-                    "<body>" + response + "</body></html>";
-        }
-
-        return pageString;
+    private String hotController;
+    private String hotMethod;
+    private String hotParams;
+    public void ExpectHotReload(String controller, String method, String params) {
+        hotController=controller;
+        hotMethod=method;
+        hotParams=params;
     }
-
-    private String errorPage(String message, String controller, String method) {
-        //noinspection unused
-        ErrorModel model = new ErrorModel();
-        model.Controller = controller;
-        model.Message = message;
-        model.Method = method;
-        return template.internalTemplate("error.html", model);
+    public void ClearHotLoad(){
+        hotController=null;
+        hotMethod=null;
+        hotParams=null;
     }
 
     private static class ErrorModel {
@@ -201,18 +247,10 @@ public class AppWebRouter extends WebViewClient {
         public String Method;
     }
 
-    private InputStream getRawAsset(String path) {
-        try {
-            return assets.open(path);
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-            return null;
-        }
-    }
-
     private static class PageResult {
         public String data;
         public String mimeType;
         public InputStream rawData;
+        public boolean hotReloadCandidate;
     }
 }
