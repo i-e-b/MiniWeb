@@ -62,8 +62,8 @@ public class JsCallbackManager {
      * @param message Message to display. Should be short.
      */
     @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
-    public void showTitle(String message) {
-        mainActivity.PopupTitle(message);
+    public void showTitle(String message, String color) {
+        mainActivity.PopupTitle(message, color);
     }
 
     /**

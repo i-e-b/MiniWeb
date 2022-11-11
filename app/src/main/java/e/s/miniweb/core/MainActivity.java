@@ -3,10 +3,14 @@ package e.s.miniweb.core;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
+import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.Toast;
@@ -14,10 +18,12 @@ import android.widget.Toast;
 import e.s.miniweb.JsCallbackManager;
 
 public class MainActivity extends Activity {
+    private static final String TAG = "MainActivity";
     private WebView view;
     private AppWebRouter client;
     private JsCallbackManager manager;
     private long lastPress; // controls double-back-to-exit timing
+    private boolean hasLoaded = false;
 
     // Do start-up of the app
     @SuppressLint("SetJavaScriptEnabled")
@@ -65,7 +71,12 @@ public class MainActivity extends Activity {
     }
 
     // first render of the homepage
-    public void HomepageLoaded() {hideTitle();}
+    public void HomepageLoaded() {
+        if (!hasLoaded) {
+            hasLoaded = true;
+            hideTitle();
+        }
+    }
 
     // Show a message as a small 'toast' alert (subtle)
     public void showToast(String message) {
@@ -81,11 +92,23 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void setTitleColor(String color){
+        if (color == null) return;
+        try {
+            ActionBar titleBar = this.getActionBar();
+            ColorDrawable colorDrawable = new ColorDrawable(Color.parseColor(color)); // css-like color, e.g. "#0F9D58"
+            titleBar.setBackgroundDrawable(colorDrawable);
+        } catch(Exception ex) {
+            Log.e(TAG, ex.toString());
+        }
+    }
+
     // Show a message by displaying the Activity title (bold)
-    public void PopupTitle(String message) {
+    public void PopupTitle(String message, String color) {
         runOnUiThread(() -> {
             ActionBar titleBar = this.getActionBar();
             if (titleBar != null) {
+                setTitleColor(color);
                 titleBar.setTitle(message);
                 titleBar.show();
             }
@@ -100,13 +123,15 @@ public class MainActivity extends Activity {
     // Kick-off the startup process.
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
         // NOTE:
         // DO NOT add any more code to the onCreate method.
         // It is small and lightweight on purpose.
         // Do any start-up in the loadWebViewWithLocalClient() method.
 
+        hasLoaded = false;
 
-        super.onCreate(savedInstanceState);
         this.setTitle("Loading..."); // temp message as soon as possible
 
         // setup the web view

@@ -16,7 +16,7 @@ import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.template.TemplateEngine;
 
 public class AppWebRouter extends WebViewClient {
-    private final String HtmlMime = "text/html; charset=utf-8";
+    private final String HtmlMime = "text/html";
     final private TemplateEngine template;
     private final AssetManager assets;
     public boolean clearHistory;

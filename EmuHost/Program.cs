@@ -80,7 +80,7 @@ internal static class Program
     private static ContextResult DoRouting(string url, HttpListenerContext ctx)
     {
         var bits = url.Split(new[] { '/' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        if (bits.Length < 1) return SendOk(ctx, "text/html; charset=utf-8", WelcomePage());
+        if (bits.Length < 1) return SendOk(ctx, "text/html", WelcomePage());
 
         switch (bits[0])
         {
@@ -118,7 +118,7 @@ internal static class Program
     
     private static string GuessMime(string path) {
         if (path.EndsWith(".css")) return "text/css";
-        if (path.EndsWith(".html")) return "text/html; charset=utf-8";
+        if (path.EndsWith(".html")) return "text/html";
         if (path.EndsWith(".js")) return "application/javascript";
 
         if (path.EndsWith(".svg")) return "image/svg+xml";
