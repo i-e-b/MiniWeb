@@ -15,7 +15,7 @@ public class BrowserEventListener extends WebChromeClient {
 
     @Override
     public void onProgressChanged(WebView view, int newProgress) {
-        System.out.println("progress = " + newProgress);
+        //System.out.println("progress = " + newProgress);
     }
 
     @Override

@@ -2,9 +2,11 @@ package e.s.miniweb.core;
 
 import android.content.res.AssetManager;
 import android.net.Uri;
+import android.util.Log;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -16,6 +18,7 @@ import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.template.TemplateEngine;
 
 public class AppWebRouter extends WebViewClient {
+    private static final String TAG = "AppWebRouter";
     private final String HtmlMime = "text/html";
     final private TemplateEngine template;
     private final AssetManager assets;
@@ -34,13 +37,13 @@ public class AppWebRouter extends WebViewClient {
         // We return value true if we want to do anything OTHER than navigation
         // like, if we wanted a link to show some kind of Android system screen.
         // If the intent is to handle the click by navigating to one of our own
-        // self-generated pages, we return true and use 'shouldInterceptRequest'
+        // self-generated pages, we return false and use 'shouldInterceptRequest'
         return false;
     }
 
     @Override
     public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-        System.out.println(error.toString());
+        Log.e(TAG, error.toString());
     }
 
     @Override
@@ -52,15 +55,25 @@ public class AppWebRouter extends WebViewClient {
             view.clearHistory();
         }
         super.onPageFinished(view, url);
+        view.clearCache(true); // clear any cached files. We don't need them
     }
 
+    /**
+     * Core of the router. This provides app-generated data for a web request
+     * rather than loading from a network request.
+     */
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
         // Return null when the web view should get the page from the real internet.
         // If we return a proper WebResourceResponse, the web view will render that.
         // We could check for a https://*.my-site.com url for going outside etc.
 
+        // Ask the routing & template system for a result
         PageResult pageString = getResultContent(request);
+
+        if (pageString == null){ // the routing did not work. Pass up to system
+            return super.shouldInterceptRequest(view, request);
+        }
 
         // is this a raw data result (i.e. from a file)
         if (pageString.rawData != null){
@@ -75,6 +88,9 @@ public class AppWebRouter extends WebViewClient {
         return new WebResourceResponse(pageString.mimeType, "utf-8", data);
     }
 
+    /** Decode what kind of thing is being requested,
+     * and pass to the appropriate handler
+     */
     private PageResult getResultContent(WebResourceRequest request) {
         PageResult pageResult = new PageResult();
         String controller = "?";
@@ -102,7 +118,7 @@ public class AppWebRouter extends WebViewClient {
                 pageResult.mimeType = HtmlMime;
                 return pageResult;
 
-            } else if (scheme.equals("asset")) {
+            } else if (scheme.equals("asset")) { // request for a file stored in the APK
                 String path = url.getHost()+url.getPath();
                 controller = "asset fetch";
                 method = path;
@@ -111,6 +127,10 @@ public class AppWebRouter extends WebViewClient {
                 pageResult.mimeType = guessMime(path);
                 return pageResult;
 
+
+            } else if (scheme.equals("content")) { // request for an Android service's data
+                // TODO: handle this
+                return null;
             } else {
                 pageResult.data = errorPage("Unknown url type: "+scheme, controller, method);
                 pageResult.mimeType = HtmlMime;
