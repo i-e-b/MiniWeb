@@ -26,14 +26,36 @@
 -keepclassmembernames class e.s.miniweb.controllers.** { *; }
 -keepnames class e.s.miniweb.controllers.** { *; }
 -keep class e.s.miniweb.controllers.** { *; }
+-keepclassmembernames public class e.s.miniweb.controllers.** { *; }
+-keepnames public class e.s.miniweb.controllers.** { *; }
+-keep public class e.s.miniweb.controllers.** { *; }
 
+# Keep all model names
 -keepclassmembernames class e.s.miniweb.models.** { *; }
 -keepnames class e.s.miniweb.models.** { *; }
 -keep class e.s.miniweb.models.** { *; }
+-keepclassmembernames public class e.s.miniweb.models.** { *; }
+-keepnames public class e.s.miniweb.models.** { *; }
+-keep public class e.s.miniweb.models.** { *; }
 
+# Keep names of things called model
 -keepclassmembernames class **Model { *; }
 -keepnames class **Model { *; }
 -keep class **Model { *; }
+-keepclassmembernames public class **Model { *; }
+-keepnames public class **Model { *; }
+-keep public class **Model { *; }
+
+# Keep names in anonymous types
+-keepclassmembernames class this** { *; }
+-keepnames class this** { *; }
+-keepclassmembernames public class this** { *; }
+-keepnames public class this** { *; }
+
+-keepclassmembernames class *$* { *; }
+-keepclassmembernames public class *$* { *; }
+
+# keep all annotations
 -keepattributes *Annotation*
 
 -keepclassmembers class ** {

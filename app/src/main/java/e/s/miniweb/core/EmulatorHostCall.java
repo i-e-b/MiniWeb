@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -22,9 +21,6 @@ public class EmulatorHostCall {
 
     // Status strings we expect from the host
     private static final String HOST_UP_MSG = "ANDROID_EMU_HOST_V1";
-    private static final String HOST_NOT_FOUND_MSG = "NOT_FOUND";
-    private static final String HOST_ERROR_MSG = "HOST_ERROR";
-
     private static final String TAG = "EmulatorHostCall";
 
     /**
@@ -80,7 +76,7 @@ public class EmulatorHostCall {
                 conn.disconnect();
             }
         } catch (Exception e){
-            Log.e(TAG, e.toString());
+            Log.i(TAG, "failure in query host (string). Probably not connected.");
             return "";
         }
     }
@@ -120,7 +116,7 @@ public class EmulatorHostCall {
                 conn.disconnect();
             }
         } catch (Exception e){
-            Log.e(TAG, e.toString());
+            Log.i(TAG, "failure in query host (data). Probably not connected.");
             return null;
         }
     }

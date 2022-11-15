@@ -214,7 +214,7 @@ public class MainActivity extends Activity {
                 }
 
                 // For each asset that was requested by the current page (including the page itself)
-                for(String tmplPath: tmplPaths) {
+                for (String tmplPath : tmplPaths) {
                     // Ask the emulator host what the last modified date was
                     String path = "touched/" + tmplPath;
                     String modifiedDate = EmulatorHostCall.queryHostForString(path);
@@ -237,6 +237,8 @@ public class MainActivity extends Activity {
                         });
                     }
                 }
+            } catch (Exception ex){
+                Log.w(TAG, "error in emulator host loop: "+ex);
             } finally {
                 hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again if awake
             }
