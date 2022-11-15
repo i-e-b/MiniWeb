@@ -24,6 +24,7 @@ public class TemplateResponse {
     public String Controller;
     public String Method;
     public String Params;
+    public String LastPageChangeDate;
 
     /**
      * Duplicate lines in a template.

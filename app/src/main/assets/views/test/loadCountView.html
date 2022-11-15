@@ -1,0 +1,18 @@
+<h1>Hot load and load count</h1>
+<a href="app://home">Home</a>
+<h2>This page has been requested {{LoadCount}} times.</h2>
+<p>
+    The count above increments each time the <i>Controller</i> is called
+    to render this page. This is the equivalent of your app doing some kind
+    of 'action' or performing a request.
+</p>
+<p>
+    If you go back to the <a href="app://home" class="small-link">Home page</a>
+    and visit this page again, the number "{{LoadCount}}" should increase.
+</p>
+<p>
+    However, if you open the file at <code>assets/views/test/loadCountView.html</code>
+    and edit it (causing a <i>hot re-load</i>) then the number should <b>not</b>
+    increase. This demonstrates that the controller was not called again, and the
+    existing page was simply re-loaded.
+</p>

@@ -3,11 +3,6 @@ package e.s.miniweb.core;
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.ActivityManager;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
@@ -21,8 +16,7 @@ import android.webkit.WebView;
 import android.widget.Toast;
 
 import java.io.File;
-import java.util.Calendar;
-import java.util.Objects;
+import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
 import e.s.miniweb.core.template.TemplateEngine;
@@ -31,6 +25,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private WebView view;
     private AppWebRouter client;
+    private AssetLoader loader;
     private JsCallbackManager manager;
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
@@ -48,7 +43,8 @@ public class MainActivity extends Activity {
         Looper.prepare();
 
         // hook the view to the app client and request the home page
-        client = new AppWebRouter(getAssets()); // <-- route definitions are in here
+        loader = new AssetLoader(getAssets());
+        client = new AppWebRouter(loader); // <-- route definitions are in here
         manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
 
         // Try to contact the hot-reload service.
@@ -208,45 +204,57 @@ public class MainActivity extends Activity {
         cleanAllCacheFiles();
     }
 
-    Runnable mStatusChecker = new Runnable() {
+    /** Background task that checks for changes to assets used by the current page */
+    Runnable HotReloadAssetChecker = new Runnable() {
         @Override
         public void run() {
             try {
-                String tmplPath = TemplateEngine.GetHotReloadPath();
-                if (Objects.equals(tmplPath, "")) return;
+                // Get list of assets that have been loaded since last navigation event
+                Set<String> tmplPaths = TemplateEngine.GetHotReloadPaths();
+                if (tmplPaths.isEmpty()) {
+                    Log.i(TAG,"No paths registered for hot-reload");
+                    return;
+                }
 
-                String path = "touched/views/" + tmplPath + ".html";
-                String modifiedDate = EmulatorHostCall.queryHost(path);
+                // For each asset that was requested by the current page (including the page itself)
+                for(String tmplPath: tmplPaths) {
 
-                boolean doReload = TemplateEngine.CanHotReload(tmplPath, modifiedDate);
+                    Log.i(TAG, "Checking "+tmplPath);
+                    // Ask the emulator host what the last modified date was
+                    String path = "touched/" + tmplPath;
+                    String modifiedDate = EmulatorHostCall.queryHostForString(path);
 
-                if (doReload){
-                    TemplateEngine.TryLoadFromHost = true; // make sure it's switched on
+                    // If the date has changed, we should reload the *page* (not just the asset)
+                    boolean doReload = TemplateEngine.HasAssetChanged(tmplPath, modifiedDate);
 
-                    // TODO: make sure we're only re-rendering, and not calling the controller again.
-                    client.ExpectHotReload(
-                            TemplateEngine.GetHotController(),
-                            TemplateEngine.GetHotMethod(),
-                            TemplateEngine.GetHotParams()
-                            );
+                    if (doReload) {
+                        TemplateEngine.TryLoadFromHost = true; // make sure hot-load is switched on
 
-                    runOnUiThread(()-> {
-                        view.reload(); // ???
-                    });
+                        // Make sure we're only re-rendering, and not calling the controller again.
+                        client.ExpectHotReload(
+                                TemplateEngine.GetHotController(),
+                                TemplateEngine.GetHotMethod(),
+                                TemplateEngine.GetHotParams()
+                        );
+
+                        runOnUiThread(() -> {
+                            view.reload(); // Ask the web view to request and render the current page
+                        });
+                    }
                 }
             } finally {
-                hotReloadHandler.postDelayed(mStatusChecker, hotReloadInterval); // tick again if awake
+                hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again if awake
             }
         }
     };
 
     void startHotloadRepeater() {
         Log.i(TAG, "Starting looper");
-        mStatusChecker.run();
+        HotReloadAssetChecker.run();
     }
 
     void stopHotloadRepeater() {
-        hotReloadHandler.removeCallbacks(mStatusChecker);
+        hotReloadHandler.removeCallbacks(HotReloadAssetChecker);
         Log.i(TAG, "Stopping looper");
     }
 

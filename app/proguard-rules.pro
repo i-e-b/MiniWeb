@@ -41,7 +41,7 @@
     public void on*(**);
 }
 
-# repack obfuscated classes into single package so it would be hard to find their originall package
+# repack obfuscated classes into single package
 -repackageclasses ''
 -allowaccessmodification
 

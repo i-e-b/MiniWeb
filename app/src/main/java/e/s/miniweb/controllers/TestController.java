@@ -1,9 +1,7 @@
 package e.s.miniweb.controllers;
 
-import android.annotation.SuppressLint;
 import android.webkit.WebResourceRequest;
 
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -51,6 +49,7 @@ public class TestController extends ControllerBase {
         TemplateEngine.BindMethod(controller, "emoji", this::emoji);
         TemplateEngine.BindMethod(controller, "svg-embed", this::svgEmbed);
         TemplateEngine.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
+        TemplateEngine.BindMethod(controller, "increment", this::incrementPage);
     }
 
     private String lastName = "";
@@ -102,13 +101,28 @@ public class TestController extends ControllerBase {
         return Page("test/paramsAndForms3", model);
     }
 
+    private static int loadCount = 0;
     /**
-     * Display a reference page full of emoji supported by Android
+     * Display a page that proves hot-load is working
+     */
+    private TemplateResponse incrementPage(Map<String, String> params, WebResourceRequest request) {
+
+        loadCount++;
+
+        Object model = new Object(){
+            public final String LoadCount = ""+loadCount;
+        };
+
+        return Page("test/loadCountView", model);
+    }
+
+    /**
+     * Display a page showing emulator-host stats
      */
     private TemplateResponse emulatorAndHostTests(Map<String, String> params, WebResourceRequest request) {
         Object model = new Object(){
             public final String IsConnected = EmulatorHostCall.hostIsAvailable() ? "connected" : "not available";
-            public final String HostTime = EmulatorHostCall.queryHost("time");
+            public final String HostTime = EmulatorHostCall.queryHostForString("time");
             public final String SelfTime = getIsoDateNow();
         };
 

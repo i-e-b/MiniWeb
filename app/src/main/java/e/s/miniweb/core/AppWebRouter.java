@@ -6,7 +6,6 @@ import android.util.Log;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
-import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -21,10 +20,10 @@ public class AppWebRouter extends WebViewClient {
     private static final String TAG = "AppWebRouter";
     private final String HtmlMime = "text/html";
     final private TemplateEngine template;
-    private final AssetManager assets;
+    private final AssetLoader assets;
     public boolean clearHistory;
 
-    public AppWebRouter(AssetManager assets){
+    public AppWebRouter(AssetLoader assets){
         template = new TemplateEngine(assets);
         this.assets = assets;
 
@@ -34,10 +33,15 @@ public class AppWebRouter extends WebViewClient {
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-        // We return value true if we want to do anything OTHER than navigation
-        // like, if we wanted a link to show some kind of Android system screen.
-        // If the intent is to handle the click by navigating to one of our own
-        // self-generated pages, we return false and use 'shouldInterceptRequest'
+        // This gets called only for page-to-page navigation requests, and not
+        // for any in-page asset loading requests. This provides a useful hook
+        // where we can clear the 'hot-reload' asset list.
+        template.ClearReload();
+
+        // We return value true if we want to do anything OTHER than navigation.
+        // Like, if we wanted a link to show some kind of Android system screen.
+        // If the intent is to handle the click by navigating to one of our own,
+        // self-generated pages, we return false and use shouldInterceptRequest.
         return false;
     }
 
@@ -64,6 +68,8 @@ public class AppWebRouter extends WebViewClient {
      */
     @Override
     public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        // This method is called for every page and asset: navigation events and the
+        // Assets loaded subsequently based on the page that is loaded.
         // Return null when the web view should get the page from the real internet.
         // If we return a proper WebResourceResponse, the web view will render that.
         // We could check for a https://*.my-site.com url for going outside etc.
@@ -72,12 +78,11 @@ public class AppWebRouter extends WebViewClient {
         PageResult pageString = getResultContent(request);
 
         if (pageString == null){ // the routing did not work. Pass up to system
-            template.ClearReload();
             return super.shouldInterceptRequest(view, request);
         }
 
         // is this a raw data result (i.e. from a file)
-        if (pageString.rawData != null){
+        if (pageString.rawData != null) {
             return new WebResourceResponse(pageString.mimeType, null, pageString.rawData);
         }
 
@@ -126,6 +131,7 @@ public class AppWebRouter extends WebViewClient {
                 controller = "asset fetch";
                 method = path;
 
+                template.AddHotReloadAsset(path);
                 pageResult.rawData = getRawAsset(path);
                 pageResult.mimeType = guessMime(path);
                 pageResult.hotReloadCandidate = false;

@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import e.s.miniweb.core.AssetLoader;
 import e.s.miniweb.core.EmulatorHostCall;
 
 public class TemplateEngine {
@@ -27,19 +28,94 @@ public class TemplateEngine {
     // composite name => call-back; Composite is controller | method
     private static final Map<String, WebMethod> responders = new HashMap<>();
     private static final Set<Object> controllers = new HashSet<>();
-    private final AssetManager assets;
+    private final AssetLoader assets;
 
-    private static TemplateResponse lastPageRendered; // supports hot-reload
-    private static String lastPageChangeDate;
-
+    // path -> template response
+    private static final Map<String, TemplateResponse> hotReloadAssets = new HashMap<>();
+    private static TemplateResponse lastPageRendered = null;
     public static boolean TryLoadFromHost = false; // part of the hot-load system.
 
-    public TemplateEngine(AssetManager assets) {
+    public TemplateEngine(AssetLoader assets) {
         // Note: Is Java's reflection is so crap we can't pre-load class info in
         // a meaningful way? So we wait until we get a call, and cache from there?
         this.assets = assets;
     }
 
+    //region Hot-reload
+    /** If true, the last rendered page is available for hot-reload */
+    public static Set<String> GetHotReloadPaths() {
+        return hotReloadAssets.keySet();
+    }
+
+    /** Add the path of an asset to the list of paths that should trigger a hot-reload */
+    public void AddHotReloadAsset(String path) {
+        if (path == null){
+            Log.w(TAG, "AddHotReloadAsset was given an empty path");
+            return;
+        }
+
+        Log.i(TAG, "adding asset to hot reload: "+path);
+        hotReloadAssets.put(path, new TemplateResponse());
+    }
+    public void AddHotReloadPage(TemplateResponse tmpl) {
+        if (tmpl == null){
+            Log.w(TAG, "AddHotReloadPage was given an empty template");
+            return;
+        }
+
+        Log.i(TAG, "adding page to hot reload: " + tmpl.TemplatePath);
+        // see e.s.miniweb.core.template.TemplateEngine#getDocTemplate  -->
+        hotReloadAssets.put("views/" + tmpl.TemplatePath + ".html", tmpl);
+    }
+
+    /** If true, the last rendered page is available for hot-reload */
+    public static boolean HasAssetChanged(String filePath, String changeDate) {
+        if (!hotReloadAssets.containsKey(filePath)) {
+            Log.w(TAG, "Unexpected hot reload query: "+filePath);
+            return false; // not a path we recognise
+        }
+
+        TemplateResponse target = hotReloadAssets.get(filePath);
+        if (target == null){Log.e(TAG, "Null reference in hot reload query: "+filePath);return false;}
+
+
+        if (target.LastPageChangeDate == null){ // haven't captured original date
+            target.LastPageChangeDate = changeDate; // save for next go around
+            return false;
+        }
+        if (target.LastPageChangeDate.equals(changeDate)) return false; // file not changed
+
+        Log.i("HOTRELOAD", "Comparing '"+filePath+"' to '"+lastPageRendered.TemplatePath+" and "+changeDate+" to "+target.LastPageChangeDate);
+
+        target.LastPageChangeDate = changeDate; // update the date for next time
+        return true; // yes, this asset has changed
+    }
+    public static String GetHotController(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Controller;
+    }public static String GetHotMethod(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Method;
+    }public static String GetHotParams(){
+        return (lastPageRendered == null) ? "" : lastPageRendered.Params;
+    }
+
+    /** Clear any previous hot-reload state */
+    public void ClearReload(){
+        hotReloadAssets.clear();
+        lastPageRendered = null;
+    }
+
+    /** Just do the render phase of `Run` */
+    public String RunHotReload() {
+        try {
+            readAsset("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            return transformTemplate(lastPageRendered, null);
+        } catch (Exception ex){
+            return null;
+        }
+    }
+    //endregion
+
+    //region Controller binding
     public static void BindMethod(String controllerName, String methodName, WebMethod methodFunc) {
         String composite = controllerName+"|="+methodName;
         if (responders.containsKey(composite)){
@@ -55,52 +131,7 @@ public class TemplateEngine {
         // just keep a reference for the gc
         controllers.add(o);
     }
-
-    /** If true, the last rendered page is available for hot-reload */
-    public static String GetHotReloadPath() {
-        if (lastPageRendered == null) return "";
-        return lastPageRendered.TemplatePath;
-    }
-
-    /** If true, the last rendered page is available for hot-reload */
-    public static boolean CanHotReload(String filePath, String changeDate) {
-        if (lastPageRendered == null) {
-            lastPageChangeDate = null;
-            return false; // nothing to hot-load
-        }
-        if (lastPageChangeDate == null){ // haven't captured original date
-            lastPageChangeDate = changeDate;
-            return false;
-        }
-        if (lastPageChangeDate.equals(changeDate)) return false; // file not changed
-
-        Log.i("HOTRELOAD", "Comparing '"+filePath+"' to '"+lastPageRendered.TemplatePath+" and "+changeDate+" to "+lastPageChangeDate);
-        lastPageChangeDate = changeDate;
-        return lastPageRendered != null && Objects.equals(filePath, lastPageRendered.TemplatePath);
-    }
-    public static String GetHotController(){
-        return (lastPageRendered == null) ? "" : lastPageRendered.Controller;
-    }public static String GetHotMethod(){
-        return (lastPageRendered == null) ? "" : lastPageRendered.Method;
-    }public static String GetHotParams(){
-        return (lastPageRendered == null) ? "" : lastPageRendered.Params;
-    }
-
-    /** Clear any previous hot-reload state */
-    public void ClearReload(){
-        lastPageRendered = null;
-        lastPageChangeDate = null;
-    }
-
-    /** Just do the render phase of `Run` */
-    public String RunHotReload() {
-        try {
-            readAsset("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
-            return transformTemplate(lastPageRendered, null);
-        } catch (Exception ex){
-            return null;
-        }
-    }
+    //endregion
 
     /** Call out to the controller, get a template and model object.
      * Fill out template, then return the resulting document as a string.
@@ -129,6 +160,8 @@ public class TemplateEngine {
 
         // ready to render the final page.
         // if we wanted to 'refresh', then `tmpl` is what we'd need
+
+        AddHotReloadPage(tmpl);
         lastPageRendered = tmpl;
         lastPageRendered.Controller = controller;
         lastPageRendered.Method = method;
@@ -163,13 +196,13 @@ public class TemplateEngine {
         }
     }
 
+    //region Render core
     /**
      * Render a page that causes a redirect
      */
     private String redirectPage(TemplateResponse tmpl) {
         return internalTemplate("redirect.html", new RedirectModel(tmpl));
     }
-
 
     private static class RedirectModel {
         public final String RedirectUrl;
@@ -443,21 +476,7 @@ public class TemplateEngine {
         resp.TemplateLines.clear();
 
         // If the hot-load host is available, try to read the file from there
-        Reader rdr = null;
-        InputStream is = null;
-        if (TryLoadFromHost){
-            Log.i(TAG, "Try host load: assets/"+fileName);
-            String result = EmulatorHostCall.queryHost("assets/" + fileName);
-            if (!result.equals("")) {
-                rdr = new StringReader(result);
-            }
-        }
-
-        // If the file didn't load, or hot-loading is off, load from APK
-        if (rdr == null) {
-            is = assets.open(fileName);
-            rdr = new InputStreamReader(is);
-        }
+        Reader rdr = assets.read(fileName);
 
         // Now read file lines into the template
         BufferedReader br = new BufferedReader(rdr);
@@ -469,9 +488,8 @@ public class TemplateEngine {
             }
 
             // Close the InputStream and BufferedReader
-            if (is != null) is.close();
+            if (rdr != null) rdr.close();
             br.close();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -490,4 +508,5 @@ public class TemplateEngine {
         }
         return result;
     }
+    //endregion
 }

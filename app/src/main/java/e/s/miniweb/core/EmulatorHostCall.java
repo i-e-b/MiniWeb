@@ -3,9 +3,13 @@ package e.s.miniweb.core;
 import android.util.Log;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.util.Objects;
 
 /**
@@ -51,7 +55,7 @@ public class EmulatorHostCall {
      * Returns the server result, or empty
      * @param path path and query to send to host. Does NOT need leading '/'
      */
-    public static String queryHost(String path){
+    public static String queryHostForString(String path){
         try {
             URL url = new URL(HOST_BASE + (path.startsWith("/") ? path.substring(1) : path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -59,7 +63,8 @@ public class EmulatorHostCall {
                 conn.setConnectTimeout(30); // short connection time-out
                 conn.setReadTimeout(1000);
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                InputStream is = conn.getInputStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
                 StringBuilder sb = new StringBuilder();
                 String readLine;
 
@@ -68,6 +73,8 @@ public class EmulatorHostCall {
                     sb.append(readLine); // add it to the template
                 }
 
+                is.close();
+                br.close();
                 return sb.toString();
             } finally {
                 conn.disconnect();
@@ -75,6 +82,46 @@ public class EmulatorHostCall {
         } catch (Exception e){
             Log.e(TAG, e.toString());
             return "";
+        }
+    }
+    /**
+     * Send a 'GET' request to the host with a given path.
+     * Returns the server result, or empty
+     * @param path path and query to send to host. Does NOT need leading '/'
+     */
+    public static InputStream queryHostForData(String path){
+        try {
+            // we read data to a buffer, then return a stream-reader for that,
+            // so that we don't hit time-out issues.
+            URL url = new URL(HOST_BASE + (path.startsWith("/") ? path.substring(1) : path));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            try {
+                conn.setConnectTimeout(30); // short connection time-out
+                conn.setReadTimeout(1000);
+
+                InputStream is = conn.getInputStream();
+
+                // Creating an object of ByteArrayOutputStream class
+                ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                byte[] buffer = new byte[1024];
+                try {
+                    int temp;
+                    while ((temp = is.read(buffer)) != -1) {
+                        byteArrayOutputStream.write(buffer, 0, temp);
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, e.toString());
+                }
+                is.close();
+
+                byte[] byteArray = byteArrayOutputStream.toByteArray();
+                return new ByteArrayInputStream(byteArray);
+            } finally {
+                conn.disconnect();
+            }
+        } catch (Exception e){
+            Log.e(TAG, e.toString());
+            return null;
         }
     }
 }

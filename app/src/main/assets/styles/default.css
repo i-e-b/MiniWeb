@@ -23,6 +23,11 @@ a:active {
     background: linear-gradient(#00a,  #55e);
 }
 
+.small-link{
+    padding: 3px;
+    font-size: initial;
+}
+
 /* Make submit button bigger */
 input[type=button],
 input[type=submit]{

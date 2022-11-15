@@ -42,7 +42,7 @@ public class JsCallbackManager {
      */
     @JavascriptInterface
     public String queryHost(String queryPath){
-        return EmulatorHostCall.queryHost(queryPath);
+        return EmulatorHostCall.queryHostForString(queryPath);
     }
 
     /**
