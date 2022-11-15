@@ -23,9 +23,20 @@ a:active {
     background: linear-gradient(#00a,  #55e);
 }
 
+/* Small version of link button for inline with text */
 .small-link{
     padding: 3px;
     font-size: initial;
+}
+
+/* Make monospaced text stand out */
+code {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    background-color: #eee;
+    font-size: large;
+    color: #700;
+    font-face: fixed;
 }
 
 /* Make submit button bigger */

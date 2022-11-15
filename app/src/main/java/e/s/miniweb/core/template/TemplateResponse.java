@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The path to a document template, and the model data to go in it.
+ * The path to a document template, and the model data to go in it, and some details for the hot-reload system.
  * This is all we need to render a final page.
  */
 public class TemplateResponse {

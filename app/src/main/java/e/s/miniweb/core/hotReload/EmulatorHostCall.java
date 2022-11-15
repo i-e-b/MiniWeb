@@ -1,4 +1,4 @@
-package e.s.miniweb.core;
+package e.s.miniweb.core.hotReload;
 
 import android.util.Log;
 
@@ -16,6 +16,12 @@ import java.util.Objects;
  * this app is running on an emulator hosted by a PC
  */
 public class EmulatorHostCall {
+    /** Time allowed for contacting the emulator host. This should be short */
+    private static final int CONNECT_TIME_MS = 150;
+
+    /** Time allowed for transferring data from emulator host */
+    private static final int READ_TIME_MS = 2500;
+
     // This is where we expect to find the host tool running
     private static final String HOST_BASE = "http://10.0.2.2:1310/";
 
@@ -33,8 +39,8 @@ public class EmulatorHostCall {
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 // Set short time-out. The host server should respond in a few ms.
-                conn.setConnectTimeout(30);
-                conn.setReadTimeout(30);
+                conn.setConnectTimeout(CONNECT_TIME_MS);
+                conn.setReadTimeout(CONNECT_TIME_MS); // deliberately the wrong one
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 return Objects.equals(br.readLine(), HOST_UP_MSG);
@@ -56,8 +62,8 @@ public class EmulatorHostCall {
             URL url = new URL(HOST_BASE + (path.startsWith("/") ? path.substring(1) : path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
-                conn.setConnectTimeout(30); // short connection time-out
-                conn.setReadTimeout(1000);
+                conn.setConnectTimeout(CONNECT_TIME_MS); // short connection time-out
+                conn.setReadTimeout(READ_TIME_MS);
 
                 InputStream is = conn.getInputStream();
                 BufferedReader br = new BufferedReader(new InputStreamReader(is));
@@ -67,6 +73,7 @@ public class EmulatorHostCall {
                 // While the BufferedReader readLine is not null
                 while ((readLine = br.readLine()) != null) {
                     sb.append(readLine); // add it to the template
+                    sb.append("\r\n"); // add line break back in
                 }
 
                 is.close();
@@ -80,6 +87,7 @@ public class EmulatorHostCall {
             return "";
         }
     }
+
     /**
      * Send a 'GET' request to the host with a given path.
      * Returns the server result, or empty
@@ -92,8 +100,8 @@ public class EmulatorHostCall {
             URL url = new URL(HOST_BASE + (path.startsWith("/") ? path.substring(1) : path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
-                conn.setConnectTimeout(30); // short connection time-out
-                conn.setReadTimeout(1000);
+                conn.setConnectTimeout(CONNECT_TIME_MS); // short connection time-out
+                conn.setReadTimeout(READ_TIME_MS);
 
                 InputStream is = conn.getInputStream();
 

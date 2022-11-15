@@ -14,11 +14,6 @@ public class BrowserEventListener extends WebChromeClient {
     }
 
     @Override
-    public void onProgressChanged(WebView view, int newProgress) {
-        //System.out.println("progress = " + newProgress);
-    }
-
-    @Override
     public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
         mainActivity.showToast(message);
         System.out.println("alert = " + message);

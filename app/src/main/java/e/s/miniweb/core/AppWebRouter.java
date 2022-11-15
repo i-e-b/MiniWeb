@@ -1,6 +1,5 @@
 package e.s.miniweb.core;
 
-import android.content.res.AssetManager;
 import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebResourceError;
@@ -14,6 +13,8 @@ import java.io.InputStream;
 import java.util.Objects;
 
 import e.s.miniweb.ControllerBindings;
+import e.s.miniweb.core.hotReload.AssetLoader;
+import e.s.miniweb.core.hotReload.HotReloadMonitor;
 import e.s.miniweb.core.template.TemplateEngine;
 
 public class AppWebRouter extends WebViewClient {
@@ -21,11 +22,13 @@ public class AppWebRouter extends WebViewClient {
     private final String HtmlMime = "text/html";
     final private TemplateEngine template;
     private final AssetLoader assets;
+    private MainActivity mainView;
     public boolean clearHistory;
 
-    public AppWebRouter(AssetLoader assets){
+    public AppWebRouter(AssetLoader assets, MainActivity main){
         template = new TemplateEngine(assets);
         this.assets = assets;
+        this.mainView = main;
 
         // Prepare all the controllers for everything
         ControllerBindings.BindAllControllers();
@@ -36,7 +39,7 @@ public class AppWebRouter extends WebViewClient {
         // This gets called only for page-to-page navigation requests, and not
         // for any in-page asset loading requests. This provides a useful hook
         // where we can clear the 'hot-reload' asset list.
-        template.ClearReload();
+        HotReloadMonitor.ClearReload();
 
         // We return value true if we want to do anything OTHER than navigation.
         // Like, if we wanted a link to show some kind of Android system screen.
@@ -53,6 +56,7 @@ public class AppWebRouter extends WebViewClient {
     @Override
     public void onPageFinished(WebView view, String url)
     {
+        mainView.pageLoaded();
         if (clearHistory)
         {
             clearHistory = false;
@@ -131,7 +135,7 @@ public class AppWebRouter extends WebViewClient {
                 controller = "asset fetch";
                 method = path;
 
-                template.AddHotReloadAsset(path);
+                HotReloadMonitor.AddHotReloadAsset(path);
                 pageResult.rawData = getRawAsset(path);
                 pageResult.mimeType = guessMime(path);
                 pageResult.hotReloadCandidate = false;
@@ -172,7 +176,7 @@ public class AppWebRouter extends WebViewClient {
         String response = null;
         if (Objects.equals(controller, hotController) && method.equals(hotMethod) && Objects.equals(params, hotParams)) {
             // This is a hot reload. Don't actually run the template.
-            response = template.RunHotReload();
+            response = HotReloadMonitor.RunHotReload(template);
             Log.i(TAG, "Doing hot-reload");
         }
 

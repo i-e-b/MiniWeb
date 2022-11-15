@@ -2,8 +2,8 @@ package e.s.miniweb;
 
 import android.webkit.JavascriptInterface;
 
-import e.s.miniweb.core.EmulatorHostCall;
 import e.s.miniweb.core.MainActivity;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
 
 // Available to on-page JavaScript as 'manager'.
 // This handles page script-to-android-app functions.
@@ -43,16 +43,6 @@ public class JsCallbackManager {
     @JavascriptInterface
     public String queryHost(String queryPath){
         return EmulatorHostCall.queryHostForString(queryPath);
-    }
-
-    /**
-     * Called by the first page displayed at start-up.
-     * This removes the "Loading..." message.
-     * No effect at other times.
-     */
-    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
-    public void homepageLoaded() {
-        mainActivity.HomepageLoaded();
     }
 
     /**

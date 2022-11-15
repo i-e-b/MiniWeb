@@ -19,7 +19,9 @@ import java.io.File;
 import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
-import e.s.miniweb.core.template.TemplateEngine;
+import e.s.miniweb.core.hotReload.AssetLoader;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
+import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
@@ -43,18 +45,11 @@ public class MainActivity extends Activity {
 
         // hook the view to the app client and request the home page
         AssetLoader loader = new AssetLoader(getAssets());
-        client = new AppWebRouter(loader); // <-- route definitions are in here
+        client = new AppWebRouter(loader, this); // <-- route definitions are in here
         manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
+        hotReloadHandler = new Handler();
 
-        // Try to contact the hot-reload service.
-        // Run the helper like `.\TinyWebHook.exe "C:\gits\MiniWeb\app\src\main\assets"`
-        if (EmulatorHostCall.hostIsAvailable()) {
-            // Set a timer running that will try to reload pages if the source changes.
-            hotReloadHandler = new Handler();
-            startHotloadRepeater();
-        } else {
-            Log.i(TAG, "Emulator host service did not respond. Hot reload not available");
-        }
+        tryStartHotReloadLoop();
 
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
@@ -79,6 +74,18 @@ public class MainActivity extends Activity {
         Looper.loop();
     }
 
+    private void tryStartHotReloadLoop() {
+        // Try to contact the hot-reload service.
+        // Run the helper like `.\TinyWebHook.exe "C:\gits\MiniWeb\app\src\main\assets"`
+        if (EmulatorHostCall.hostIsAvailable()) {
+            // Set a timer running that will try to reload pages if the source changes.
+            Log.i(TAG, "Emulator host service found. Starting hot reload.");
+            startHotReloadRepeater();
+        } else {
+            Log.i(TAG, "Emulator host service did not respond. Hot reload not available");
+        }
+    }
+
     /** Handle back button.
     * If we're on the home page, we let Android deal with it.
     * Otherwise we send it down to the web view
@@ -101,7 +108,7 @@ public class MainActivity extends Activity {
 
     /** Called when the homepage is loaded.
      * On the first render of the homepage, we hide 'Loading...' messages */
-    public void HomepageLoaded() {
+    public void pageLoaded() {
         if (!hasLoaded) {
             hasLoaded = true;
             hideTitle();
@@ -180,13 +187,13 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
-        stopHotloadRepeater();
+        stopHotReloadRepeater();
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        if (hotReloadHandler != null) startHotloadRepeater();
+        tryStartHotReloadLoop();
     }
 
     /**
@@ -198,7 +205,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        stopHotloadRepeater();
+        stopHotReloadRepeater();
         cleanAllCacheFiles();
     }
 
@@ -208,7 +215,7 @@ public class MainActivity extends Activity {
         public void run() {
             try {
                 // Get list of assets that have been loaded since last navigation event
-                Set<String> tmplPaths = TemplateEngine.GetHotReloadPaths();
+                Set<String> tmplPaths = HotReloadMonitor.GetHotReloadPaths();
                 if (tmplPaths.isEmpty()) {
                     return;
                 }
@@ -220,16 +227,16 @@ public class MainActivity extends Activity {
                     String modifiedDate = EmulatorHostCall.queryHostForString(path);
 
                     // If the date has changed, we should reload the *page* (not just the asset)
-                    boolean doReload = TemplateEngine.HasAssetChanged(tmplPath, modifiedDate);
+                    boolean doReload = HotReloadMonitor.HasAssetChanged(tmplPath, modifiedDate);
 
                     if (doReload) {
-                        TemplateEngine.TryLoadFromHost = true; // make sure hot-load is switched on
+                        HotReloadMonitor.TryLoadFromHost = true; // make sure hot-load is switched on
 
                         // Make sure we're only re-rendering, and not calling the controller again.
                         client.ExpectHotReload(
-                                TemplateEngine.GetHotController(),
-                                TemplateEngine.GetHotMethod(),
-                                TemplateEngine.GetHotParams()
+                                HotReloadMonitor.GetHotController(),
+                                HotReloadMonitor.GetHotMethod(),
+                                HotReloadMonitor.GetHotParams()
                         );
 
                         runOnUiThread(() -> {
@@ -245,12 +252,14 @@ public class MainActivity extends Activity {
         }
     };
 
-    void startHotloadRepeater() {
+    void startHotReloadRepeater() {
         Log.i(TAG, "Starting looper");
+        HotReloadMonitor.TryLoadFromHost = true;
         HotReloadAssetChecker.run();
     }
 
-    void stopHotloadRepeater() {
+    void stopHotReloadRepeater() {
+        HotReloadMonitor.TryLoadFromHost = false;
         hotReloadHandler.removeCallbacks(HotReloadAssetChecker);
         Log.i(TAG, "Stopping looper");
     }

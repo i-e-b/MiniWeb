@@ -5,7 +5,7 @@ import android.webkit.WebResourceRequest;
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
-import e.s.miniweb.core.template.TemplateEngine;
+import e.s.miniweb.core.ControllerBinding;
 import e.s.miniweb.core.template.TemplateResponse;
 
 /*
@@ -30,7 +30,7 @@ public class Home extends ControllerBase {
      */
     public Home() {
         String controller = "home";
-        TemplateEngine.BindMethod(controller, "index", this::index);
+        ControllerBinding.BindMethod(controller, "index", this::index);
     }
 
     /**

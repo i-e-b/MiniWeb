@@ -7,7 +7,15 @@ A simple set of drivers for the built-in Android WebView that provides
 a web-like development environment contained in a single app.
 
 The app uses as much Android system features as possible to result
-in a small final APK. The app plus example pages comes to under 30KB.
+in a small final APK. The app plus example pages comes to around 30KB
+when built in release mode.
+
+## Roadmap
+
+Things to do:
+
+- [ ] Add partial views, including by taking a model sub-item
+- [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
 
 ## How it works
 
@@ -101,7 +109,21 @@ You can loop over an item in a loop using `{{for:item:...}}`
 
 ## Emulator Host and Hot Reload
 
-Hot reload is not working yet, but should be coming soon(ish)
+MiniWeb supports "hot-reload" of pages and assets when running under an emulator
+(i.e. during development). You need to run the Emulator Host tool (`TinyWebHook`)
+or a similar compatible service.
+
+The Emulator Host tool **must** be running when your app first starts, otherwise
+the hot-reload system will be disabled.
+
+If that is working correctly, changes to files in the `assets` folder will be
+monitored, and if any files being used by the current page (including linked 
+resources) will cause the page to refresh with the updated resources.
+
+Note: the controller is not called during hot-reload. The template model used
+to render the page is kept to allow redraw without calling the controller.
+This means that any external effects of your page (like reading from, *or* writing
+to, a database) will not be repeated for a hot-reload.
 
 The Android Emulator connects to the host over IP address `10.0.2.2`.
 The MiniWeb class at `e.s.miniweb.core.EmulatorHostCall` has a few methods to make

@@ -12,10 +12,11 @@ import java.util.Map;
 
 import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
-import e.s.miniweb.core.EmulatorHostCall;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
+import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.hotReload.HotReloadMonitor;
 import e.s.miniweb.models.FullNameModel;
 import e.s.miniweb.models.NestedObjectModel;
-import e.s.miniweb.core.template.TemplateEngine;
 import e.s.miniweb.core.template.TemplateResponse;
 @SuppressWarnings("unused")
 
@@ -37,19 +38,19 @@ public class TestController extends ControllerBase {
      */
     public TestController() {
         String controller = "test";
-        TemplateEngine.BindMethod(controller, "testOne", this::testOne);
-        TemplateEngine.BindMethod(controller, "testTwo", this::testTwo);
-        TemplateEngine.BindMethod(controller, "model-paths", this::modelPaths);
-        TemplateEngine.BindMethod(controller, "bad-input", this::badInput);
-        TemplateEngine.BindMethod(controller, "bad-method", this::badMethod);
-        TemplateEngine.BindMethod(controller, "paramsAndForms", this::paramsAndForms);
-        TemplateEngine.BindMethod(controller, "paramsAndForms2", this::paramsAndForms2);
-        TemplateEngine.BindMethod(controller, "paramsAndForms3", this::paramsAndForms3);
-        TemplateEngine.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
-        TemplateEngine.BindMethod(controller, "emoji", this::emoji);
-        TemplateEngine.BindMethod(controller, "svg-embed", this::svgEmbed);
-        TemplateEngine.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
-        TemplateEngine.BindMethod(controller, "increment", this::incrementPage);
+        ControllerBinding.BindMethod(controller, "testOne", this::testOne);
+        ControllerBinding.BindMethod(controller, "testTwo", this::testTwo);
+        ControllerBinding.BindMethod(controller, "model-paths", this::modelPaths);
+        ControllerBinding.BindMethod(controller, "bad-input", this::badInput);
+        ControllerBinding.BindMethod(controller, "bad-method", this::badMethod);
+        ControllerBinding.BindMethod(controller, "paramsAndForms", this::paramsAndForms);
+        ControllerBinding.BindMethod(controller, "paramsAndForms2", this::paramsAndForms2);
+        ControllerBinding.BindMethod(controller, "paramsAndForms3", this::paramsAndForms3);
+        ControllerBinding.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
+        ControllerBinding.BindMethod(controller, "emoji", this::emoji);
+        ControllerBinding.BindMethod(controller, "svg-embed", this::svgEmbed);
+        ControllerBinding.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
+        ControllerBinding.BindMethod(controller, "increment", this::incrementPage);
     }
 
     private String lastName = "";
@@ -122,6 +123,7 @@ public class TestController extends ControllerBase {
     private TemplateResponse emulatorAndHostTests(Map<String, String> params, WebResourceRequest request) {
         Object model = new Object(){
             public final String IsConnected = EmulatorHostCall.hostIsAvailable() ? "connected" : "not available";
+            public final String HotReloadRunning = HotReloadMonitor.TryLoadFromHost ? "running" : "off";
             public final String HostTime = EmulatorHostCall.queryHostForString("time");
             public final String SelfTime = getIsoDateNow();
         };
