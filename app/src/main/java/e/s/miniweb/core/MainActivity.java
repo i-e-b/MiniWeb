@@ -25,7 +25,6 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private WebView view;
     private AppWebRouter client;
-    private AssetLoader loader;
     private JsCallbackManager manager;
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
@@ -43,7 +42,7 @@ public class MainActivity extends Activity {
         Looper.prepare();
 
         // hook the view to the app client and request the home page
-        loader = new AssetLoader(getAssets());
+        AssetLoader loader = new AssetLoader(getAssets());
         client = new AppWebRouter(loader); // <-- route definitions are in here
         manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
 
@@ -72,7 +71,6 @@ public class MainActivity extends Activity {
             view.addJavascriptInterface(manager, "manager");
 
             // Turn off caching
-            view.getSettings().setAppCacheEnabled(false);
             view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 
             // send the view to home page, with a special flag to say this is the first page since app start.
@@ -212,14 +210,11 @@ public class MainActivity extends Activity {
                 // Get list of assets that have been loaded since last navigation event
                 Set<String> tmplPaths = TemplateEngine.GetHotReloadPaths();
                 if (tmplPaths.isEmpty()) {
-                    Log.i(TAG,"No paths registered for hot-reload");
                     return;
                 }
 
                 // For each asset that was requested by the current page (including the page itself)
                 for(String tmplPath: tmplPaths) {
-
-                    Log.i(TAG, "Checking "+tmplPath);
                     // Ask the emulator host what the last modified date was
                     String path = "touched/" + tmplPath;
                     String modifiedDate = EmulatorHostCall.queryHostForString(path);

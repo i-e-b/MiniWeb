@@ -59,3 +59,22 @@ input[type=text]:focus {
     margin: 0px;
     border: 3px solid #88f;
 }
+
+
+/* SVG background for a demo */
+
+.globe-bg{
+    background: url("asset://images/example.svg");
+    background-position: center;
+    background-attachment: scroll;
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+
+.badge-bg{
+    background: url("asset://images/badge.svg");
+    background-position: center;
+    background-attachment: scroll;
+    background-size: contain;
+    background-repeat: no-repeat;
+}

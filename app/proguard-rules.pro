@@ -20,21 +20,20 @@
     @android.webkit.JavascriptInterface <methods>;
 }
 
-# Keep names in controllers to stop reflection being broken.
 -keep public class e.s.miniweb.core.MainActivity
 
+# Keep names in controllers to stop reflection being broken.
 -keepclassmembernames class e.s.miniweb.controllers.** { *; }
 -keepnames class e.s.miniweb.controllers.** { *; }
--keep public class e.s.miniweb.controllers.** { *; }
-
+-keep class e.s.miniweb.controllers.** { *; }
 
 -keepclassmembernames class e.s.miniweb.models.** { *; }
 -keepnames class e.s.miniweb.models.** { *; }
--keep public class e.s.miniweb.models.** { *; }
+-keep class e.s.miniweb.models.** { *; }
 
 -keepclassmembernames class **Model { *; }
 -keepnames class **Model { *; }
--keep public class **Model { *; }
+-keep class **Model { *; }
 -keepattributes *Annotation*
 
 -keepclassmembers class ** {
