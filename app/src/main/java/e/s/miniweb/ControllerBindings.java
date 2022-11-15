@@ -9,6 +9,7 @@ public class ControllerBindings {
     public static void BindAllControllers(){
         ControllerBinding.Use(new Home());
         ControllerBinding.Use(new TestController());
+        ControllerBinding.Use(new ExamplesController());
     }
 
 }

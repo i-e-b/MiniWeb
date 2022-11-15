@@ -3,21 +3,17 @@ package e.s.miniweb.controllers;
 import android.webkit.WebResourceRequest;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
-import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
-import e.s.miniweb.models.FullNameModel;
-import e.s.miniweb.models.NestedObjectModel;
 import e.s.miniweb.core.template.TemplateResponse;
+import e.s.miniweb.models.FullNameModel;
 @SuppressWarnings("unused")
 
 /*
@@ -40,7 +36,6 @@ public class TestController extends ControllerBase {
         String controller = "test";
         ControllerBinding.BindMethod(controller, "testOne", this::testOne);
         ControllerBinding.BindMethod(controller, "testTwo", this::testTwo);
-        ControllerBinding.BindMethod(controller, "model-paths", this::modelPaths);
         ControllerBinding.BindMethod(controller, "bad-input", this::badInput);
         ControllerBinding.BindMethod(controller, "bad-method", this::badMethod);
         ControllerBinding.BindMethod(controller, "paramsAndForms", this::paramsAndForms);
@@ -168,41 +163,6 @@ public class TestController extends ControllerBase {
         return Page("test/badInput", new Object());
     }
 
-    /**
-     * Demo page with loads of templating examples
-     */
-    private TemplateResponse modelPaths(Map<String, String> params, WebResourceRequest request) {
-        List<ExampleObject> list = new ArrayList<>();
-        list.add(new ExampleObject("hello"));
-        list.add(new ExampleObject("this"));
-        list.add(new ExampleObject("is"));
-        list.add(new ExampleObject("a"));
-        list.add(new ExampleObject("list"));
-
-        List<NestedObjectModel> nested = new ArrayList<>();
-        nested.add(new NestedObjectModel("First child"));
-        nested.add(new NestedObjectModel("Second child"));
-
-        Map<String, NestedObjectModel> sampleMapNest = new HashMap<>();
-        sampleMapNest.put("myKey", new NestedObjectModel("deep"));
-
-        Object model = new Object() {
-            public final String an = "an";
-            public final String multiple = "multiple";
-            public final String s = "s";
-            public final String line = "line";
-            public final String controller = "Home";
-            public final boolean falseValue = false;
-            public final boolean trueValue = true;
-            public final Object nullValue = null;
-            public final NestedObjectModel pathPoints = new NestedObjectModel("This value comes from a dotted path");
-            public final List<NestedObjectModel> nestedRepeat = nested;
-            public final List<ExampleObject> listThing = list;
-            public final Map<String, NestedObjectModel> mapNest = sampleMapNest;
-        };
-
-        return Page("test/modelPaths", model);
-    }
 
     /**
      * Demo page. Delete as required
@@ -233,15 +193,4 @@ public class TestController extends ControllerBase {
 
 
 
-    // Internal classes used for view models
-    // you can use either complete public classes, nested classes, or inline anonymous types
-    // to drive the template engine
-
-    private static class ExampleObject {
-        public final String exampleField;
-
-        public ExampleObject(String msg) {
-            exampleField = msg;
-        }
-    }
 }

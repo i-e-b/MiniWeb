@@ -1,0 +1,31 @@
+<h1>Permission Visibility</h1>
+<a href="app://home">Home</a>
+<p>
+    This feature is not yet implemented
+</p>
+<p>
+    <!-- Using 'needs':
+         Note that the '{{needs:...}}' and '{{end-needs:...}}'
+         MUST be on their own line, with no other text, elements, or comments.
+         The template engine isn't very smart, and it will try honour 'needs' groups if it finds them in comments.
+         -->
+
+    You can gate parts of a view
+    {{needs: perm1, perm2}}
+    to specific permissions
+    {{end-needs: perm1, perm2}}
+    while exposing others to any user.
+
+    <!--
+
+    Plans:
+
+        - each listed permission is an 'or' -- any permission in the set gives access
+        - permission 'needs' groups can be nested
+        - the permissions object is static, and shared across the whole app.
+          -> there should be a hook to populate it on log-in, and clear it on log-out.
+          -> there should be an identity string that is accessible to controllers to show user name (if any)
+        - would be good to annotate the controllers in a similar way
+
+    -->
+</p>
