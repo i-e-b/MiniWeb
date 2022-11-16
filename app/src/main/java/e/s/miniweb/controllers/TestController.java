@@ -34,6 +34,8 @@ public class TestController extends ControllerBase {
      */
     public TestController() {
         String controller = "test";
+
+        // pages
         ControllerBinding.BindMethod(controller, "testOne", this::testOne);
         ControllerBinding.BindMethod(controller, "testTwo", this::testTwo);
         ControllerBinding.BindMethod(controller, "bad-input", this::badInput);
@@ -46,6 +48,9 @@ public class TestController extends ControllerBase {
         ControllerBinding.BindMethod(controller, "svg-embed", this::svgEmbed);
         ControllerBinding.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
         ControllerBinding.BindMethod(controller, "increment", this::incrementPage);
+
+        // partials
+        ControllerBinding.BindMethod(controller, "badge-africa", this::badgeAfrica);
     }
 
     private String lastName = "";
@@ -144,6 +149,11 @@ public class TestController extends ControllerBase {
         return Page("test/emoji", null);
     }
 
+
+    /** Show a globe, with a shield, and 'value' from params in that shield. */
+    private TemplateResponse badgeAfrica(Map<String, String> params, WebResourceRequest request) {
+        return Page("test/badge-africa", params);
+    }
 
     /**
      * Display a page that loads an `img` tag with SVG source

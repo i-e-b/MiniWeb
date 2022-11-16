@@ -20,9 +20,13 @@
 <p>
     You can also use SVG images in CSS definitions, including as background elements.
     This allows you to build up multiple SVG bits into a larger graphic:
+</p>
     <div class="globe-bg" style="width:128px;height:128px">
         <div class="badge-bg" style="float:right;width:64px;height:64px">
             <div style="padding-top:20px;text-align:center;width:60px;">58</div>
         </div>
     </div>
+<p>
+    Composite badges like this are a good use of partial views:
+    {{view: url=app://test/badge-africa?value=99}}
 </p>
