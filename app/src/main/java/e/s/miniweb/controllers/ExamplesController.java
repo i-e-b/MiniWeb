@@ -24,22 +24,43 @@ public class ExamplesController extends ControllerBase {
 
         // partials
         ControllerBinding.BindMethod(controller, "url-view", this::urlPartialView);
+        ControllerBinding.BindMethod(controller, "element-view", this::urlPartialElementView);
+    }
+
+    private TemplateResponse urlPartialElementView(Map<String, String> params, WebResourceRequest request) {
+        return Page("examples/element-view", params);
     }
 
     private TemplateResponse urlPartialView(Map<String, String> params, WebResourceRequest request) {
-        Object model = null;
-        if (params.containsKey("text")) {
-            model = new Object() {
-                public final String text = params.get("text");
-            };
-        }
+        Object model = new Object() {
+            public final String text = params.containsKey("text") ? params.get("text") : null;
+            public final String text2 = params.containsKey("text2") ? params.get("text2") : null;
+        };
 
         return Page("examples/a-sub-view", model);
     }
 
 
     private TemplateResponse partialViews(Map<String, String> params, WebResourceRequest request) {
-        return Page("examples/partial-views", null);
+
+        List<ExamplesController.ExampleObject> list = new ArrayList<>();
+        list.add(new ExamplesController.ExampleObject("hello"));
+        list.add(new ExamplesController.ExampleObject("this"));
+        list.add(new ExamplesController.ExampleObject("is"));
+        list.add(new ExamplesController.ExampleObject("a"));
+        list.add(new ExamplesController.ExampleObject("list"));
+
+        Object subViewObject = new Object(){
+            public final String text = "This is 'text' from a child item on the parent model";
+        };
+
+        Object model = new Object() {
+            public final String text = "This is 'text' from the parent model";
+            public final List<ExamplesController.ExampleObject> listOfThings = list;
+            public final Object subViewData = subViewObject;
+        };
+
+        return Page("examples/partial-views", model);
     }
 
     private TemplateResponse permissionVisibility(Map<String, String> params, WebResourceRequest request) {
@@ -88,9 +109,11 @@ public class ExamplesController extends ControllerBase {
 
     private static class ExampleObject {
         public final String exampleField;
+        public final String text;
 
         public ExampleObject(String msg) {
             exampleField = msg;
+            text = msg;
         }
     }
 }

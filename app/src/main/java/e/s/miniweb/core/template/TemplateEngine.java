@@ -5,6 +5,7 @@ import android.util.Log;
 import android.webkit.WebResourceRequest;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
@@ -130,62 +131,68 @@ public class TemplateEngine {
 
         List<String> templateLines = tmpl.TemplateLines;
         for (int templateLineIndex = 0, templateLinesSize = templateLines.size(); templateLineIndex < templateLinesSize; templateLineIndex++) {
-            String templateLine = templateLines.get(templateLineIndex);
-            if (!templateLine.contains("{{")) { // plain text line
+            try {
+                String templateLine = templateLines.get(templateLineIndex);
+                if (!templateLine.contains("{{")) { // plain text line
+                    pageOut.append(templateLine);
+                    pageOut.append("\r\n");
+                    continue;
+                }
+
+                // If the {{ or }} are quoted, ignore for special blocks (but not simple replacements)
+                boolean isQuoted = templateLine.contains("'{{") || templateLine.contains("}}'");
+
+                // It it part of a 'for' block?
+                if (!isQuoted && templateLine.contains("{{for:")) {
+                    // block control: recurse contents as new sub-documents, then skip to end of block
+                    int templateLinesConsumed = recurseForBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                    if (templateLinesConsumed > 0) {
+                        templateLineIndex += templateLinesConsumed;
+                    } else {
+                        Log.w(TAG, "Could not interpret 'for' block. Check markup and data types. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                        pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
+                    }
+                    continue;
+                }
+
+                // Is it a sub-view?
+                if (!isQuoted && templateLine.contains("{{view:")) {
+                    int templateLinesConsumed = injectViewBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                    if (templateLinesConsumed >= 0) { // 'view' should only be 1 line
+                        templateLineIndex += templateLinesConsumed;
+                    } else {
+                        Log.w(TAG, "Could not interpret 'view' block. Check markup and data types. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                        pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
+                    }
+                    continue;
+                }
+
+                // Is it a permission block?
+                if (!isQuoted && templateLine.contains("{{needs:")) {
+                    pageOut.append("Hello. I see your permission request.");
+                    continue;
+                }
+
+                // Trailing 'end'?
+                if (!isQuoted && templateLine.contains("{{end:")) {
+                    Log.w(TAG, "Unexpected 'end' tag. Either bad markup, or a block was not interpreted correctly. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                    continue;
+                }
+
+                // For each template hole, find a field on the object that matches. If not found, we replace with a `[name]` placeholder.
+                // Null values are replaced with empty string. We never leave `{{..}}` in place, otherwise we'd have an endless loop.
+                while (templateLine.contains("{{")) {
+                    templateLine = singleReplace(templateLine, tmpl, cursorItem);
+                }
+
+                // everything should be done now.
                 pageOut.append(templateLine);
                 pageOut.append("\r\n");
-                continue;
+            } catch (Exception ex){
+                Log.e(TAG, "Unexpected error in template transformer", ex);
+
+                pageOut.append("\r\n[ERROR: ").append(ex.getMessage()).append("]\r\n");
             }
-
-            // If the {{ or }} are quoted, ignore for special blocks (but not simple replacements)
-            boolean isQuoted = templateLine.contains("'{{") || templateLine.contains("}}'");
-
-            // It it part of a 'for' block?
-            if (!isQuoted && templateLine.contains("{{for:")) {
-                // block control: recurse contents as new sub-documents, then skip to end of block
-                int templateLinesConsumed = recurseForBlock(templateLineIndex, tmpl, cursorItem, pageOut);
-                if (templateLinesConsumed > 0) {
-                    templateLineIndex += templateLinesConsumed;
-                } else {
-                    Log.w(TAG, "Could not interpret 'for' block. Check markup and data types. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
-                    pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
-                }
-                continue;
-            }
-
-            // Is it a sub-view?
-            if (!isQuoted && templateLine.contains("{{view:")){
-                int templateLinesConsumed = injectViewBlock(templateLineIndex, tmpl, cursorItem, pageOut);
-                if (templateLinesConsumed >= 0) { // 'view' should only be 1 line
-                    templateLineIndex += templateLinesConsumed;
-                } else {
-                    Log.w(TAG, "Could not interpret 'view' block. Check markup and data types. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
-                    pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
-                }
-                continue;
-            }
-
-            // Is it a permission block?
-            if (!isQuoted && templateLine.contains("{{needs:")){
-                pageOut.append("Hello. I see your permission request.");
-                continue;
-            }
-
-            // Trailing 'end'?
-            if (!isQuoted && templateLine.contains("{{end:")){
-                Log.w(TAG, "Unexpected 'end' tag. Either bad markup, or a block was not interpreted correctly. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
-                continue;
-            }
-
-            // For each template hole, find a field on the object that matches. If not found, we replace with a `[name]` placeholder.
-            // Null values are replaced with empty string. We never leave `{{..}}` in place, otherwise we'd have an endless loop.
-            while (templateLine.contains("{{")) {
-                templateLine = singleReplace(templateLine, tmpl, cursorItem);
-            }
-
-            // everything should be done now.
-            pageOut.append(templateLine);
-            pageOut.append("\r\n");
         }
 
         return pageOut.toString();
@@ -211,7 +218,12 @@ public class TemplateEngine {
 
         if (params.containsKey("url")) { // should do a GET to this URL
             try {
-                WebResourceRequest request = new InternalRequest(Uri.parse(params.get("url")));
+                Uri target = Uri.parse(params.get("url"));
+                if (params.containsKey("model")){ // inject model into params?
+                    // TODO: actually implement
+                    target = target.buildUpon().appendQueryParameter("text","NOT YET IMPLEMENTED").build();
+                }
+                WebResourceRequest request = new InternalRequest(target);
                 String response = router.getControllerResponse(request, true);
                 sb.append(response);
                 return 0;
@@ -222,14 +234,67 @@ public class TemplateEngine {
             }
         }
 
+        // exit early if there is no path
         if (!params.containsKey("path")){
-            Log.w(TAG, "invalid view block: no url or path. File=" + tmpl.TemplatePath + "; Line=" + startIndex);
+            Log.w(TAG, "Invalid view block: no url or path. Check the mark-up, and ensure ',' separators. File=" + tmpl.TemplatePath + "; Line=" + startIndex);
             return -1;
         }
 
-        // file path and model, can stay inside the template engine
-        sb.append("not yet implemented");
-        return 0;
+        // Try to find a model item. We will assume page's model if no prefix is given.
+        // If we can't find anything, we will pass in `null`
+        Object viewModel = getViewModelObjectByPath(startIndex, tmpl, cursorItem, params);
+
+        // Try to load the view into a new template
+        String viewPath = params.get("path");
+        try {
+            TemplateResponse viewTmpl = new TemplateResponse();
+            viewTmpl.TemplateLines = new ArrayList<>();
+            viewTmpl.Model = viewModel;
+
+            copyLinesToTemplate(viewPath, viewTmpl);
+            sb.append(transformTemplate(viewTmpl, null));
+            return 0;
+        } catch (FileNotFoundException fex){
+            Log.w(TAG, "Failed to load view! TargetFile="+viewPath+"; ParentFile=" + tmpl.TemplatePath + "; Line=" + startIndex);
+            return -1;
+        } catch (Exception ex){
+            Log.w(TAG, "Failed to load view block: File=" + tmpl.TemplatePath + "; Line=" + startIndex + "; Error=" + ex);
+            return -1;
+        }
+    }
+
+    /** try to find an object given a `model.path.to.thing` or `item.path.to.thing` */
+    private Object getViewModelObjectByPath(int lineIdx, TemplateResponse tmpl, Object cursorItem, Map<String, String> params) {
+        if (params.containsKey("model")){
+            String modelPath = params.get("model");
+            if (modelPath == null || modelPath.equals("")) {
+                Log.w(TAG, "invalid view block: empty model. File=" + tmpl.TemplatePath + "; Line=" + lineIdx);
+                return null;
+            } else if (modelPath.startsWith("model")) { // looks like a page model reference
+                if (modelPath.equals("model")){ // view should get the whole model
+                    return tmpl.Model;
+                } else { // need to find by path
+                    return findFieldObject(tmpl.Model, stripFirstDotItem(modelPath));
+                }
+            } else if (modelPath.startsWith("item")){ // looks like a 'for' block item reference
+                if (modelPath.equals("item")){ // view should get the whole iterated item
+                    return cursorItem;
+                } else { // need to find by path
+                    return findFieldObject(cursorItem, stripFirstDotItem(modelPath));
+                }
+            } else { // assume page model reference
+                return findFieldObject(tmpl.Model, modelPath);
+            }
+        }
+        return null;
+    }
+
+    /** Remove start of string up to and including the first '.' */
+    private String stripFirstDotItem(String path) {
+        int index = path.indexOf('.');
+        if (index < 0) return "";
+        if (index+1 >= path.length()) return "";
+        return path.substring(index+1);
     }
 
     /**
@@ -383,38 +448,26 @@ public class TemplateEngine {
         return sb.toString();
     }
 
-
-    /**
-     * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
-     * This is like `findFieldObject`, but returns a string instead of an object.
-     */
-    private String findField(Object model, String name) {
-        try {
-            if (model == null) return "";
-            if (name == null) return "";
-
-            if (name.equals("")) { // special case: {{item:}} output the model as a string
-                return model.toString();
-            }
-
-            Object value = searchForField(model, name);
-
-            if (value == null) return "";
-            return value.toString();
-        } catch (Exception ex) {
-            return "[" + name + "]";
-        }
-    }
-
     /**
      * Hunts though object hierarchies for values.
      * The simplest and fastest path is to have a single field name.
      */
     private Object searchForField(Object model, String name) throws NoSuchFieldException, IllegalAccessException {
         if (!name.contains(".")) { // simple case
-            return model.getClass().getField(name).get(model);
+            if (model instanceof Map) {
+                try {
+                    Map<?, ?> map = (Map<?, ?>) model;
+                    return map.get(name);
+                } catch (Exception ex) {
+                    Log.w(TAG, "Failed to find '"+name+"' in map");
+                    return null;
+                }
+            } else {
+                return model.getClass().getField(name).get(model);
+            }
         }
 
+        // We have a dotted path. Split the path up, and step through each element.
         Object src = model;
         String[] pathBits = name.split("[.]");
 
@@ -425,8 +478,14 @@ public class TemplateEngine {
             if (looksLikeInt(bit)) { // index into iterable, or fail
                 int idx = Integer.parseInt(bit);
                 src = getIterableIndexed(src, idx);
-            } else if (src instanceof Map) {
-                src = ((Map<?, ?>) src).get(bit);
+            } else if (src instanceof Map) { // try to find a value by map
+                try {
+                    Map<?, ?> map = (Map<?, ?>) src;
+                    if (map.containsKey(bit)) src = map.get(bit);
+                } catch (Exception ex) {
+                    Log.w(TAG, "Failed to find '"+bit+"' in map");
+                    return null;
+                }
             } else { // get field by name, or fail
                 src = src.getClass().getField(bit).get(src);
             }
@@ -484,6 +543,28 @@ public class TemplateEngine {
     }
 
     /**
+     * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
+     * This is like `findFieldObject`, but returns a string instead of an object.
+     */
+    private String findField(Object model, String name) {
+        try {
+            if (model == null) return "";
+            if (name == null) return "";
+
+            if (name.equals("")) { // special case: {{item:}} output the model as a string
+                return model.toString();
+            }
+
+            Object value = searchForField(model, name);
+
+            if (value == null) return "";
+            return value.toString();
+        } catch (Exception ex) {
+            return "[" + name + "]";
+        }
+    }
+
+    /**
      * Generate and populate a TemplateResponse for the given web request
      */
     private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod wm) throws Exception {
@@ -503,8 +584,12 @@ public class TemplateEngine {
     public void copyLinesToTemplate(String fileName, TemplateResponse resp) throws IOException {
         resp.TemplateLines.clear();
 
-        // If the hot-load host is available, try to read the file from there
-        Reader rdr = assets.read(fileName);
+        Reader rdr;
+        try {
+            rdr = assets.read(fileName);
+        } catch (FileNotFoundException fex){
+            rdr = assets.read(fileName+".html");
+        }
 
         // Now read file lines into the template
         BufferedReader br = new BufferedReader(rdr);

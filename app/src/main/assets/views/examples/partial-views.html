@@ -38,8 +38,9 @@
     have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
 </p>
 <p>
-    If the path given to a <code>{​{view:...}​}</code> has no file extension, <code>.html</code>
-    will be added. You can also use the top-level model from the page:<br/>
+    If the path given to a <code>{​{view:...}​}</code> is not found, it
+    will be re-tried with <code>.html</code> added (but it's better to get the path exactly correct).
+    You can also use the top-level model from the page:<br/>
     {{view: model=model, path=views/examples/a-sub-view}}
 </p>
 
@@ -53,12 +54,31 @@
     Editing the view used by the controller will result in a hot-reload.
 </p>
 <p>
+    You can also pass query parameters to a URL view using 'model'.
+    The <i>direct</i> fields will be added to the query parameters, but
+    not any child fields.
+    {{view: model=model, url=app://examples/url-view?text2=hello}}
+</p>
+
+<h2>Repeating views</h2>
+<p>
     Views can be repeated by embedding in a <code>for</code> list:
 </p>
 <ul>
     {{for:listOfThings}}
     <li>
-        {{view: model=item, path=views/examples/element-view}}
+        {{view: model=item, path=views/examples/element-view.html}}
+    </li>
+    {{end:listOfThings}}
+</ul>
+
+<p>
+    URL views can also be repeated in a <code>for</code>, the model will be passed in as query args (if given):
+</p>
+<ul>
+    {{for:listOfThings}}
+    <li>
+        {{view: model=item, url=app://examples/element-view}}
     </li>
     {{end:listOfThings}}
 </ul>
@@ -79,4 +99,5 @@
 <p>
     This is what a view looks like if the 'item' model is used outside of a 'for' block:<br/>
     {{view: model=item, path=views/examples/a-sub-view.html}}
+    <br/> which results in the view being called with <code>null</code> as the model.
 </p>
