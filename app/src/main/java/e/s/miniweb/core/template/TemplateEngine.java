@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Reader;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -220,8 +221,10 @@ public class TemplateEngine {
             try {
                 Uri target = Uri.parse(params.get("url"));
                 if (params.containsKey("model")){ // inject model into params?
-                    // TODO: actually implement
-                    target = target.buildUpon().appendQueryParameter("text","NOT YET IMPLEMENTED").build();
+                    Object viewModel = getViewModelObjectByPath(startIndex, tmpl, cursorItem, params);
+                    if (viewModel != null) {
+                        target = mapObjectToUrlQuery(target, viewModel);
+                    }
                 }
                 WebResourceRequest request = new InternalRequest(target);
                 String response = router.getControllerResponse(request, true);
@@ -261,6 +264,40 @@ public class TemplateEngine {
             Log.w(TAG, "Failed to load view block: File=" + tmpl.TemplatePath + "; Line=" + startIndex + "; Error=" + ex);
             return -1;
         }
+    }
+
+    /** Try to map the fields of an object into a url by appending query parameters */
+    private Uri mapObjectToUrlQuery(Uri target, Object viewModel) {
+        Uri.Builder builder = target.buildUpon();
+        Map<String, String> modelAsMap = convertObjectToMap(viewModel);
+        for(String key: modelAsMap.keySet()) {
+            builder = builder.appendQueryParameter(key, modelAsMap.get(key));
+        }
+        target = builder.build();
+        return target;
+    }
+
+    /** extract public fields to a hash map */
+    private Map<String, String> convertObjectToMap(Object obj) {
+        Map<String, String> map = new HashMap<>();
+
+        if (obj != null) {
+            Field[] fields = obj.getClass().getFields();
+            for(Field f: fields){
+                if (f == null) continue;
+                Object fieldVal;
+                try {
+                    fieldVal = f.get(obj);
+                } catch (IllegalAccessException e) {
+                    continue;
+                }
+                if (fieldVal != null) {
+                    map.put(f.getName(), fieldVal.toString());
+                }
+            }
+        }
+
+        return map;
     }
 
     /** try to find an object given a `model.path.to.thing` or `item.path.to.thing` */

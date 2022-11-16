@@ -14,7 +14,7 @@ when built in release mode.
 
 Things to do:
 
-- [ ] Add partial views, including by taking a model sub-item
+- [x] Add partial views, including by taking a model sub-item
 - [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
 - [ ] View export / tooling -- ideally so pages can be edited with browser inspector etc.
 
@@ -107,6 +107,17 @@ You can loop over an item in a loop using `{{for:item:...}}`
     </ol>
 {{end:accounts}}
 ```
+
+## Editing HTML
+
+If you use Android Studio, some basic HTML editing tools are available.
+You might want to use a different one of the IntelliJ suite of tools for better support.
+
+As well as 'hot reload' described below, you can open a HTML page in your browser for basic design
+using `View` > `Open in Browser` in the Android Studio main menu:
+
+![View, Open in Browser](https://github.com/i-e-b/MiniWeb/raw/main/_docs/view-in-browser-android-studio.png)
+
 
 ## Emulator Host and Hot Reload
 

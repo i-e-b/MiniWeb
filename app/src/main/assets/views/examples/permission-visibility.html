@@ -18,13 +18,20 @@
 
     The items gated by a permission
     {{needs: perm1, perm2}}
-    Can be <a href="app://home">links</a> and other HTML,
+    Can be <a href="app://home" class="small-link">links</a> and other HTML,
     {{needs: perm1}}
-    Or partial views.
-    {{view: model=model.subViewData, path=views/examples/a-sub-view.html}}
-    {{end:needs}}
-    {{end:needs}}
-
+    <br/>Or partial views:
+    {{view: url=app://examples/url-view?text=You%20have%20permission%20one}}
+    {{end:needs perm1}}
+    {{end:needs perm1, perm2}}
+</p>
+<p>
+    If you don't have a given permission,
+    {{needs: not-a-permission}}
+    <b>WAGGA! GABBA! BOGGO!</b>
+    {{end:needs not-a-permission}}
+    the HTML is continued without the gated content, <b>and</b> without any other mark-up;
+    so be sure to check you view with and without each set of permissions.
     <!--
 
     Plans:
