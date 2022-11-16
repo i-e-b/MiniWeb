@@ -6,7 +6,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,24 +20,25 @@ public class TemplateEngine {
     private final AssetLoader assets;
 
     public TemplateEngine(AssetLoader assets) {
-        // Note: Is Java's reflection is so crap we can't pre-load class info in
-        // a meaningful way? So we wait until we get a call, and cache from there?
+        // Note: Java's reflection is so crap we can't pre-load class info in
+        // a meaningful way. So we wait until we get a call, and figure it out from there.
         this.assets = assets;
     }
 
-    /** Call out to the controller, get a template and model object.
+    /**
+     * Call out to the controller, get a template and model object.
      * Fill out template, then return the resulting document as a string.
      */
     public String Run(String controller, String method, String params, WebResourceRequest request) throws Exception {
-        String composite = controller+"|="+method;
+        String composite = controller + "|=" + method;
 
-        if ( ! ControllerBinding.hasMethod(composite)){
+        if (!ControllerBinding.hasMethod(composite)) {
             System.out.println("Unknown web method!");
             return null;
         }
 
         WebMethod wm = ControllerBinding.getMethod(composite);
-        if (wm == null){
+        if (wm == null) {
             System.out.println("Invalid web method!");
             return null;
         }
@@ -47,7 +47,7 @@ public class TemplateEngine {
         // This results in a template and the data to go with it
         TemplateResponse tmpl = getDocTemplate(request, params, wm);
 
-        if (tmpl.RedirectUrl != null){
+        if (tmpl.RedirectUrl != null) {
             return redirectPage(tmpl);
         }
 
@@ -68,15 +68,15 @@ public class TemplateEngine {
      * Render one of the internal templates -- for errors, redirects, etc.
      * You should provide the full file name (like "redirect.html")
      */
-    public String internalTemplate(String name, Object model){
+    public String internalTemplate(String name, Object model) {
         try {
             TemplateResponse tmpl = new TemplateResponse();
             tmpl.TemplateLines = new ArrayList<>();
             tmpl.Model = model;
 
-            readAsset("internal/"+name, tmpl);
+            copyLinesToTemplate("internal/" + name, tmpl);
             return transformTemplate(tmpl, null);
-        } catch (Exception ex){
+        } catch (Exception ex) {
             // don't call the error template. Something might be broken with the apk!
             StringBuilder sb = new StringBuilder();
             sb.append("<h1>Internal error</h1><pre>\r\n");
@@ -90,6 +90,7 @@ public class TemplateEngine {
     }
 
     //region Render core
+
     /**
      * Render a page that causes a redirect
      */
@@ -108,13 +109,13 @@ public class TemplateEngine {
     }
 
     /**
-     Replace {{name}} with tmpl.Model.name.toString()
-     For {{for:name}}...{{end:name}}
-         if tmpl.Model.name is enumerable, repeat the contained section for each item. The template {{item:childField}} becomes available.
-         if tmpl.Model.name is null, or false, or "", then don't show the section
-         otherwise, show the section once.
-     Template holes `{{...}}` must not cross line in the doc -- both the open and close must be on the same line.
-     Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
+     * Replace {{name}} with tmpl.Model.name.toString()
+     * For {{for:name}}...{{end:name}}
+     * if tmpl.Model.name is enumerable, repeat the contained section for each item. The template {{item:childField}} becomes available.
+     * if tmpl.Model.name is null, or false, or "", then don't show the section
+     * otherwise, show the section once.
+     * Template holes `{{...}}` must not cross line in the doc -- both the open and close must be on the same line.
+     * Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
      */
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
         StringBuilder sb = new StringBuilder();
@@ -128,13 +129,13 @@ public class TemplateEngine {
                 continue;
             }
 
-            // Any block control?
+            // Any repeating blocks?
             if (line.contains("{{for:") || line.contains("{{end:")) {
                 // block control: recurse contents as new sub-documents, then skip to end of block
-                int size = recurseBlock(lineIndex, tmpl, cursorItem, sb);
-                if (size > 0){
+                int size = recurseForBlock(lineIndex, tmpl, cursorItem, sb);
+                if (size > 0) {
                     lineIndex += size;
-                } else{
+                } else {
                     sb.append(line); // write it out -- both so we can see errors, and so comments don't get broken.
                 }
                 continue;
@@ -154,20 +155,24 @@ public class TemplateEngine {
         return sb.toString();
     }
 
-    private int recurseBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
+    /**
+     * handle repeater blocks by duplicating their contents and recursing the template process with child objects
+     */
+    private int recurseForBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
         // get the target
         String startLine = tmpl.TemplateLines.get(startIndex).trim();
-        if (! startLine.startsWith("{{") || ! startLine.endsWith("}}")) { // invalid repeat line
+        if (!startLine.startsWith("{{") || !startLine.endsWith("}}")) { // invalid repeat line
             return 0;
         }
 
+        // read the 'for' directive
         String[] bits = readDirective(startLine);
         if (bits == null) return 0; // bad '{{...:...}}' line
         if (!Objects.equals(bits[0], "for")) return 0; // not the start of a block
 
         String fieldName = bits[1];
 
-        // scan until we find the next matching '{{end:...}}'
+        // scan until we find the next *matching* '{{end:...}}'
         boolean found = false;
         int endIndex;
         List<String> templateLines = tmpl.TemplateLines;
@@ -186,35 +191,39 @@ public class TemplateEngine {
         if (!found) return 0; // could not find an end point
         int lineCount = endIndex - startIndex;
 
-        TemplateResponse subset = tmpl.cloneRange(startIndex+1, endIndex - 1);
+        // copy out the lines between start and end
+        TemplateResponse subset = tmpl.cloneRange(startIndex + 1, endIndex - 1);
 
-        // handle `{{for:item:my_thing}}`
+        // handle `{{for:item:my_thing}}` -- this allows nested loops on outer loop item.
         Object target = subset.Model;
-        if (fieldName.startsWith("item:")){
+        if (fieldName.startsWith("item:")) {
             target = cursorItem;
             fieldName = fieldName.substring(5);
         }
 
-        // now we ignore the top and bottom lines, and run everything else through `` again
-        // that might come back here if there are nested 'for' blocks
+        // now we ignore the top and bottom lines, and run everything else through `transformTemplate` again,
+        // which might come back here if there are nested 'for' blocks
         Object items = findFieldObject(target, fieldName);
-        if (items instanceof Iterable) {
+        if (items instanceof Iterable) { // 'for' item is a list. Repeat contents
             @SuppressWarnings("rawtypes") Iterable listItems = (Iterable) items;
             for (Object item : listItems) {
                 sb.append(transformTemplate(subset, item));
             }
-        } else if (items instanceof Boolean) {
+        } else if (items instanceof Boolean) { // 'for' items is bool. Show if true
             boolean b = (boolean) items;
             if (b) {
                 sb.append(transformTemplate(subset, null));
             }
-        } else if (items != null) {
+        } else if (items != null) { // something else. Show if not null
             sb.append(transformTemplate(subset, items));
         }
 
         return lineCount;
     }
 
+    /**
+     * break a directive line into parts
+     */
     private String[] readDirective(String line) {
         try {
             line = line.trim();
@@ -230,13 +239,15 @@ public class TemplateEngine {
         }
     }
 
-    // replace the FIRST template hole we find.
+    /**
+     * replace the FIRST template hole we find.
+     */
     private String singleReplace(String line, TemplateResponse tmpl, Object cursorItem) {
         String left, right;
 
         // split "...before...{{name}}...after..."
         // into left="...before..."; right="name}}..after..."
-        if (line.startsWith("{{")){
+        if (line.startsWith("{{")) {
             left = "";
             right = line.substring(2);
         } else {
@@ -252,15 +263,15 @@ public class TemplateEngine {
         sb.append(left);
 
         int closeIndex = right.indexOf("}}");
-        if (closeIndex < 0){
+        if (closeIndex < 0) {
             sb.append(right);
             return sb.toString();
         }
 
-        String name = right.substring(0,closeIndex);
-        String rest = right.substring(closeIndex+2);
+        String name = right.substring(0, closeIndex);
+        String rest = right.substring(closeIndex + 2);
 
-        if (name.startsWith("item:")){
+        if (name.startsWith("item:")) {
             sb.append(findField(cursorItem, name.substring(5)));
         } else {
             // get directly from model
@@ -271,12 +282,17 @@ public class TemplateEngine {
         return sb.toString();
     }
 
+
+    /**
+     * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
+     * This is like `findFieldObject`, but returns a string instead of an object.
+     */
     private String findField(Object model, String name) {
         try {
             if (model == null) return "";
             if (name == null) return "";
 
-            if (name.equals("")){ // special case: {{item:}} output the model as a string
+            if (name.equals("")) { // special case: {{item:}} output the model as a string
                 return model.toString();
             }
 
@@ -285,7 +301,7 @@ public class TemplateEngine {
             if (value == null) return "";
             return value.toString();
         } catch (Exception ex) {
-            return "["+name+"]";
+            return "[" + name + "]";
         }
     }
 
@@ -308,7 +324,7 @@ public class TemplateEngine {
             if (looksLikeInt(bit)) { // index into iterable, or fail
                 int idx = Integer.parseInt(bit);
                 src = getIterableIndexed(src, idx);
-            } else if (src instanceof Map){
+            } else if (src instanceof Map) {
                 src = ((Map<?, ?>) src).get(bit);
             } else { // get field by name, or fail
                 src = src.getClass().getField(bit).get(src);
@@ -317,6 +333,9 @@ public class TemplateEngine {
         return src;
     }
 
+    /**
+     * try to read the value of an object at the given index. Returns null on failure
+     */
     @SuppressWarnings("rawtypes")
     private Object getIterableIndexed(Object src, int idx) {
         // coding in Java feels more old fashioned than C.
@@ -330,12 +349,15 @@ public class TemplateEngine {
                 current = iterator.next();
 
             return current;
-        } catch (Exception ex){
+        } catch (Exception ex) {
             return null;
         }
     }
 
-    private boolean looksLikeInt(String str){
+    /**
+     * Returns true if the string contains only ascii numbers
+     */
+    private boolean looksLikeInt(String str) {
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             if (c < '0' || c > '9') return false;
@@ -343,6 +365,10 @@ public class TemplateEngine {
         return true;
     }
 
+    /**
+     * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
+     * This is like `findField`, but returns an object instead of a string.
+     */
     private Object findFieldObject(Object model, String name) {
         try {
             if (model == null) return null;
@@ -356,18 +382,24 @@ public class TemplateEngine {
         }
     }
 
+    /**
+     * Generate and populate a TemplateResponse for the given web request
+     */
     private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod wm) throws Exception {
         TemplateResponse resp = wm.generate(mapParams(params), request);
         if (resp == null) throw new Exception("Method gave a bad result");
         if (resp.RedirectUrl != null) return resp;
 
         resp.TemplateLines = new ArrayList<>();
-        readAsset("views/" + resp.TemplatePath + ".html", resp);
+        copyLinesToTemplate("views/" + resp.TemplatePath + ".html", resp);
 
         return resp;
     }
 
-    public void readAsset(String fileName, TemplateResponse resp) throws IOException {
+    /**
+     * read template file into an array of lines
+     */
+    public void copyLinesToTemplate(String fileName, TemplateResponse resp) throws IOException {
         resp.TemplateLines.clear();
 
         // If the hot-load host is available, try to read the file from there
@@ -390,16 +422,19 @@ public class TemplateEngine {
         }
     }
 
+    /**
+     * split url query parameters into a hash map
+     */
     private Map<String, String> mapParams(String params) {
         Map<String, String> result = new HashMap<>();
         if (params == null) return result;
         String[] parts = params.split("([&]|[?])");
         for (String part : parts) {
             if (part == null || part.equals("")) continue;
-            String[] sides = part.split("=",2);
+            String[] sides = part.split("=", 2);
 
-            if (sides.length == 1) result.put(sides[0],sides[0]);
-            else                   result.put(sides[0],sides[1]);
+            if (sides.length == 1) result.put(sides[0], sides[0]);
+            else result.put(sides[0], sides[1]);
         }
         return result;
     }

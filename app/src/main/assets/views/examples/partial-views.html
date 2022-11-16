@@ -1,18 +1,19 @@
 <h1>Partial Views</h1>
 <a href="app://home">Home</a>
 <p>
-    This feature is not yet implemented
+    This feature is not yet implemented. Once it is,
+    you should see some items below
 </p>
 <p>
-    <!-- Using 'partial':
-         Note that the '{{partial:...}}'
+    <!-- Using 'view':
+         Note that the '{{view:...}}'
          MUST be on its own line, with no other text, elements, or comments.
          The template engine isn't very smart, and it will try to fill templates if it finds them in comments.
 
-         The 'partial' should have two value, 'model' and 'path'.
+         The 'view' should have two value, 'model' and 'path'.
 
-         'path' is the view to render. This should be a path to an asset.
-         This asset will have template replacement applied and then will be injected
+         'path' is the view to render. This should be a URL, as with a normal page.
+         This will have template replacement applied and then will be injected
          directly into the outer page.
 
          'model' is the data to supply to the templating.
@@ -21,12 +22,22 @@
          You can use 'model' for the entire view model.
          If the model path can't be found, 'null' is passed.
     -->
-    {{partial: model=model.subViewData, path="views/examples/a-sub-view"}}
+    {{view: model=model.subViewData, path=app://examples/a-sub-view.html}}
+    The content of a view will be added directly to the parent page, so you should not
+    have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
+    <!-- we could be clever and pull <head> into the parent, and embed <body> -->
+</p>
+<p>
+    Views can be repeated by embedding in a <code>for</code> list:
 </p>
 <ul>
-{{for:listOfThings}}
-<li>
-    {{partial: model=item, path="views/examples/element-view"}}
-</li>
-{{end:listOfThings}}
+    {{for:listOfThings}}
+    <li>
+        {{view: model=item, path=app://examples/element-view}}
+    </li>
+    {{end:listOfThings}}
 </ul>
+<p>
+    This is what a view looks like if no matching path is found:<br/>
+    {{view: model=model.subViewData, path=app://not-a-controller/not-a-view}}
+</p>

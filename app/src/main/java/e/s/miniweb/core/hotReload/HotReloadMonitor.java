@@ -83,7 +83,7 @@ public class HotReloadMonitor {
     /** Just do the render phase of `Run` */
     public static String RunHotReload(TemplateEngine template) {
         try {
-            template.readAsset("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            template.copyLinesToTemplate("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
             return template.transformTemplate(lastPageRendered, null);
         } catch (Exception ex){
             Log.e(TAG, "Hot reload failed: "+ex);

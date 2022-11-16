@@ -5,7 +5,7 @@
 </p>
 <p>
     <!-- Using 'needs':
-         Note that the '{{needs:...}}' and '{{end-needs:...}}'
+         Note that the '{{needs:...}}' and '{{end:needs}}'
          MUST be on their own line, with no other text, elements, or comments.
          The template engine isn't very smart, and it will try honour 'needs' groups if it finds them in comments.
          -->
@@ -13,8 +13,17 @@
     You can gate parts of a view
     {{needs: perm1, perm2}}
     to specific permissions
-    {{end-needs: perm1, perm2}}
+    {{end:needs}}
     while exposing others to any user.
+
+    The items gated by a permission
+    {{needs: perm1, perm2}}
+    Can be <a href="app://home">links</a> and other HTML,
+    {{needs: perm1}}
+    Or partial views.
+    {{view: model=model.subViewData, path=views/examples/a-sub-view.html}}
+    {{end:needs}}
+    {{end:needs}}
 
     <!--
 
