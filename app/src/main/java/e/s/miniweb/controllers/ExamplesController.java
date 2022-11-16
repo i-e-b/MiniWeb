@@ -16,9 +16,25 @@ import e.s.miniweb.models.NestedObjectModel;
 public class ExamplesController extends ControllerBase {
     public ExamplesController(){
         String controller = "examples";
+
+        // pages
         ControllerBinding.BindMethod(controller, "model-paths", this::modelPaths);
         ControllerBinding.BindMethod(controller, "partial-views", this::partialViews);
         ControllerBinding.BindMethod(controller, "permission-visibility", this::permissionVisibility);
+
+        // partials
+        ControllerBinding.BindMethod(controller, "url-view", this::urlPartialView);
+    }
+
+    private TemplateResponse urlPartialView(Map<String, String> params, WebResourceRequest request) {
+        Object model = null;
+        if (params.containsKey("text")) {
+            model = new Object() {
+                public final String text = params.get("text");
+            };
+        }
+
+        return Page("examples/a-sub-view", model);
     }
 
 

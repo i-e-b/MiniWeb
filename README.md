@@ -16,6 +16,7 @@ Things to do:
 
 - [ ] Add partial views, including by taking a model sub-item
 - [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
+- [ ] View export / tooling -- ideally so pages can be edited with browser inspector etc.
 
 ## How it works
 

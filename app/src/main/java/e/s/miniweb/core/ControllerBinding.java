@@ -1,5 +1,7 @@
 package e.s.miniweb.core;
 
+import android.util.Log;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -8,8 +10,11 @@ import java.util.Set;
 import e.s.miniweb.core.template.WebMethod;
 
 public class ControllerBinding {
+    private static final String TAG = "ControllerBinding";
+
     // composite name => call-back; Composite is controller | method
     private static final Map<String, WebMethod> responders = new HashMap<>();
+    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     private static final Set<Object> controllers = new HashSet<>();
 
 
@@ -17,12 +22,11 @@ public class ControllerBinding {
     public static void BindMethod(String controllerName, String methodName, WebMethod methodFunc) {
         String composite = controllerName+"|="+methodName;
         if (responders.containsKey(composite)){
-            System.out.println("Reused method. Ignored.");
+            Log.w(TAG, "Reused method, Ignored. c="+controllerName+"; m="+methodName);
             return;
         }
 
         responders.put(composite, methodFunc);
-        System.out.println("Added controller. Now have "+controllers.size());
     }
 
     public static void Use(Object o) {

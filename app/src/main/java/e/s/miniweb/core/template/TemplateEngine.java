@@ -1,5 +1,7 @@
 package e.s.miniweb.core.template;
 
+import android.net.Uri;
+import android.util.Log;
 import android.webkit.WebResourceRequest;
 
 import java.io.BufferedReader;
@@ -12,24 +14,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.ControllerBinding;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
 public class TemplateEngine {
+    private static final String TAG = "TemplateEngine";
     private final AssetLoader assets;
+    private final AppWebRouter router;
 
-    public TemplateEngine(AssetLoader assets) {
+    public TemplateEngine(AssetLoader assets, AppWebRouter router) {
         // Note: Java's reflection is so crap we can't pre-load class info in
         // a meaningful way. So we wait until we get a call, and figure it out from there.
         this.assets = assets;
+        this.router = router;
     }
 
     /**
      * Call out to the controller, get a template and model object.
      * Fill out template, then return the resulting document as a string.
      */
-    public String Run(String controller, String method, String params, WebResourceRequest request) throws Exception {
+    public String Run(String controller, String method, String params, WebResourceRequest request, boolean isPartialView) throws Exception {
         String composite = controller + "|=" + method;
 
         if (!ControllerBinding.hasMethod(composite)) {
@@ -55,10 +61,12 @@ public class TemplateEngine {
         // if we wanted to 'refresh', then `tmpl` is what we'd need
 
         HotReloadMonitor.AddHotReloadPage(tmpl);
-        HotReloadMonitor.lastPageRendered = tmpl;
-        HotReloadMonitor.lastPageRendered.Controller = controller;
-        HotReloadMonitor.lastPageRendered.Method = method;
-        HotReloadMonitor.lastPageRendered.Params = params;
+        if (!isPartialView) {
+            HotReloadMonitor.lastPageRendered = tmpl;
+            HotReloadMonitor.lastPageRendered.Controller = controller;
+            HotReloadMonitor.lastPageRendered.Method = method;
+            HotReloadMonitor.lastPageRendered.Params = params;
+        }
 
         // do the render!
         return transformTemplate(tmpl, null);
@@ -118,57 +126,131 @@ public class TemplateEngine {
      * Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
      */
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
-        StringBuilder sb = new StringBuilder();
+        StringBuilder pageOut = new StringBuilder();
 
         List<String> templateLines = tmpl.TemplateLines;
-        for (int lineIndex = 0, templateLinesSize = templateLines.size(); lineIndex < templateLinesSize; lineIndex++) {
-            String line = templateLines.get(lineIndex);
-            if (!line.contains("{{")) { // plain text line
-                sb.append(line);
-                sb.append("\r\n");
+        for (int templateLineIndex = 0, templateLinesSize = templateLines.size(); templateLineIndex < templateLinesSize; templateLineIndex++) {
+            String templateLine = templateLines.get(templateLineIndex);
+            if (!templateLine.contains("{{")) { // plain text line
+                pageOut.append(templateLine);
+                pageOut.append("\r\n");
                 continue;
             }
 
-            // Any repeating blocks?
-            if (line.contains("{{for:") || line.contains("{{end:")) {
+            // If the {{ or }} are quoted, ignore for special blocks (but not simple replacements)
+            boolean isQuoted = templateLine.contains("'{{") || templateLine.contains("}}'");
+
+            // It it part of a 'for' block?
+            if (!isQuoted && templateLine.contains("{{for:")) {
                 // block control: recurse contents as new sub-documents, then skip to end of block
-                int size = recurseForBlock(lineIndex, tmpl, cursorItem, sb);
-                if (size > 0) {
-                    lineIndex += size;
+                int templateLinesConsumed = recurseForBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                if (templateLinesConsumed > 0) {
+                    templateLineIndex += templateLinesConsumed;
                 } else {
-                    sb.append(line); // write it out -- both so we can see errors, and so comments don't get broken.
+                    Log.w(TAG, "Could not interpret 'for' block. Check markup and data types. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
+                    pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
                 }
+                continue;
+            }
+
+            // Is it a sub-view?
+            if (!isQuoted && templateLine.contains("{{view:")){
+                int templateLinesConsumed = injectViewBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                if (templateLinesConsumed >= 0) { // 'view' should only be 1 line
+                    templateLineIndex += templateLinesConsumed;
+                } else {
+                    Log.w(TAG, "Could not interpret 'view' block. Check markup and data types. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
+                    pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
+                }
+                continue;
+            }
+
+            // Is it a permission block?
+            if (!isQuoted && templateLine.contains("{{needs:")){
+                pageOut.append("Hello. I see your permission request.");
+                continue;
+            }
+
+            // Trailing 'end'?
+            if (!isQuoted && templateLine.contains("{{end:")){
+                Log.w(TAG, "Unexpected 'end' tag. Either bad markup, or a block was not interpreted correctly. File="+tmpl.TemplatePath+"; Line="+templateLineIndex);
                 continue;
             }
 
             // For each template hole, find a field on the object that matches. If not found, we replace with a `[name]` placeholder.
             // Null values are replaced with empty string. We never leave `{{..}}` in place, otherwise we'd have an endless loop.
-            while (line.contains("{{")) {
-                line = singleReplace(line, tmpl, cursorItem);
+            while (templateLine.contains("{{")) {
+                templateLine = singleReplace(templateLine, tmpl, cursorItem);
             }
 
             // everything should be done now.
-            sb.append(line);
-            sb.append("\r\n");
+            pageOut.append(templateLine);
+            pageOut.append("\r\n");
         }
 
-        return sb.toString();
+        return pageOut.toString();
+    }
+
+    /** Handle sub-view blocks by calling back out through the template system and injecting results into string builder.
+     * Returns number of extra lines consumed from the input template
+     * @param startIndex offset into template lines where we should start
+     * @param cursorItem 'for' loop item, if any. Otherwise null
+     * @param sb output string builder
+     * @param tmpl template being read
+     * */
+    private int injectViewBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
+        String startLine = tmpl.TemplateLines.get(startIndex).trim();
+        if (!startLine.startsWith("{{") || !startLine.endsWith("}}")) { // invalid repeat line
+            return -1;
+        }
+
+        String[] bits = readDirective(startLine);
+        if (bits == null) return -1; // bad '{{...:...}}' line
+        if (!Objects.equals(bits[0], "view")) return -1; // not the start of a 'view' block
+        Map<String,String> params = readParams(bits[1]);
+
+        if (params.containsKey("url")) { // should do a GET to this URL
+            try {
+                WebResourceRequest request = new InternalRequest(Uri.parse(params.get("url")));
+                String response = router.getControllerResponse(request, true);
+                sb.append(response);
+                return 0;
+            } catch (Exception ex) {
+                Log.w(TAG, "URL view block failed: File=" + tmpl.TemplatePath + "; Line=" + startIndex + "; Error=" + ex);
+                sb.append("[ERROR]");
+                return -1;
+            }
+        }
+
+        if (!params.containsKey("path")){
+            Log.w(TAG, "invalid view block: no url or path. File=" + tmpl.TemplatePath + "; Line=" + startIndex);
+            return -1;
+        }
+
+        // file path and model, can stay inside the template engine
+        sb.append("not yet implemented");
+        return 0;
     }
 
     /**
-     * handle repeater blocks by duplicating their contents and recursing the template process with child objects
+     * handle repeater blocks by duplicating their contents and recursing the template process with child objects.
+     * Returns number of extra lines consumed from the input template
+     * @param startIndex offset into template lines where we should start
+     * @param cursorItem 'for' loop item, if any. Otherwise null
+     * @param sb output string builder
+     * @param tmpl template being read
      */
     private int recurseForBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
         // get the target
         String startLine = tmpl.TemplateLines.get(startIndex).trim();
         if (!startLine.startsWith("{{") || !startLine.endsWith("}}")) { // invalid repeat line
-            return 0;
+            return -1;
         }
 
         // read the 'for' directive
         String[] bits = readDirective(startLine);
-        if (bits == null) return 0; // bad '{{...:...}}' line
-        if (!Objects.equals(bits[0], "for")) return 0; // not the start of a block
+        if (bits == null) return -1; // bad '{{...:...}}' line
+        if (!Objects.equals(bits[0], "for")) return 0; // not the start of a 'for' block
 
         String fieldName = bits[1];
 
@@ -188,7 +270,7 @@ public class TemplateEngine {
             found = true;
             break;
         }
-        if (!found) return 0; // could not find an end point
+        if (!found) return -1; // could not find an end point
         int lineCount = endIndex - startIndex;
 
         // copy out the lines between start and end
@@ -222,7 +304,7 @@ public class TemplateEngine {
     }
 
     /**
-     * break a directive line into parts
+     * break a directive line into parts. Always returns 2 elements or null.
      */
     private String[] readDirective(String line) {
         try {
@@ -237,6 +319,25 @@ public class TemplateEngine {
         } catch (Exception ex) {
             return null;
         }
+    }
+
+    /**
+     * break directive params into a hash map.
+     * directive params are comma separated, and the key/value are separated by '='.
+     * (e.g. `param1=value1, param2=value2,param3=value3`)
+     */
+    private Map<String, String> readParams(String params) {
+        Map<String, String> result = new HashMap<>();
+        if (params == null) return result;
+        String[] parts = params.split(",");
+        for (String part : parts) {
+            if (part == null || part.equals("")) continue;
+            String[] sides = part.split("=", 2);
+
+            if (sides.length == 1) result.put(sides[0].trim(), sides[0].trim());
+            else result.put(sides[0].trim(), sides[1].trim());
+        }
+        return result;
     }
 
     /**

@@ -17,13 +17,17 @@
     You can use dotted paths to reach into objects. It's better to avoid this and
     have a simpler flat structure -- but the feature is available: <i>{{pathPoints.name}}</i>.
     You can reach into more complex structures like
-    <tt>nestedRepeat.0.children.1 = "{{nestedRepeat.0.children.1}}"</tt>
+    <tt>nestedRepeat.0.children.1 = &quot;{{nestedRepeat.0.children.1}}&quot;</tt>
     (note iterables are zero-indexed)
     or
-    <tt>mapNest.myKey.name = "{{mapNest.myKey.name}}"</tt>,
+    <tt>mapNest.myKey.name = &quot;{{mapNest.myKey.name}}&quot;</tt>,
     but this is slower to render and more complex to use.
 </p>
-
+<p>
+    If you want to display a '{​{' or '}&ZeroWidthSpace;}' in your output, place a zero-width join character between them.
+    This is Unicode character <code>\u200B</code>,
+    which can be added to HTML with <code>&amp;ZeroWidthSpace;</code>, <code>&amp;#8203;</code> or <code>&amp;#x200B;</code>
+</p>
 <h1>for: and item:</h1>
 <p>Look at the html template to see how this works</p>
 <ul>

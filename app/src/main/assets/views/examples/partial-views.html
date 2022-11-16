@@ -3,29 +3,54 @@
 <p>
     This feature is not yet implemented. Once it is,
     you should see some items below
+
+    <b>NOTE</b>: Editing any of the sub-views should trigger a hot-reload.
+</p>
+<!-- Using 'view':
+     Note that the '{{view:...}}'
+     MUST be on its own line, with no other text, elements, or comments.
+     The template engine isn't very smart, and it will try to fill templates if it finds them in comments.
+
+     '{{view:...}}' blocks can run in two modes: files and request.
+
+     For 'file', the 'view' should have two parameters, 'model' and 'path'.
+
+     'path' is the view to render. This should be a path to a html file in
+     the assets folder. This will have template replacement applied and the
+     result will be injected directly into the outer page.
+
+     'model' is the data to supply to the templating.
+     If model is not supplied, 'null' will be passed to the template engine.
+     You can use 'item' when in a 'for:' list.
+     You can use 'model' for the entire view model.
+     If the model path can't be found, 'null' is passed.
+
+     For 'request', the 'view' should have one parameter: 'url'.
+
+     'url' is the Url (including query params if needed). This will be used
+     to pass a GET request to a controller, which is responsible to rendering
+     the result that will be injected directly into the outer page.
+-->
+<h2>View using a template file:</h2>
+<p>
+    {{view: model=model.subViewData, path=views/examples/a-sub-view.html}}
+    <br/>The content of a view will be added directly to the parent page, so you should not
+    have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
 </p>
 <p>
-    <!-- Using 'view':
-         Note that the '{{view:...}}'
-         MUST be on its own line, with no other text, elements, or comments.
-         The template engine isn't very smart, and it will try to fill templates if it finds them in comments.
+    If the path given to a <code>{​{view:...}​}</code> has no file extension, <code>.html</code>
+    will be added. You can also use the top-level model from the page:<br/>
+    {{view: model=model, path=views/examples/a-sub-view}}
+</p>
 
-         The 'view' should have two value, 'model' and 'path'.
-
-         'path' is the view to render. This should be a URL, as with a normal page.
-         This will have template replacement applied and then will be injected
-         directly into the outer page.
-
-         'model' is the data to supply to the templating.
-         If model is not supplied, 'null' will be passed to the template engine.
-         You can use 'item' when in a 'for:' list.
-         You can use 'model' for the entire view model.
-         If the model path can't be found, 'null' is passed.
-    -->
-    {{view: model=model.subViewData, path=app://examples/a-sub-view.html}}
-    The content of a view will be added directly to the parent page, so you should not
-    have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
-    <!-- we could be clever and pull <head> into the parent, and embed <body> -->
+<h2>View using a URL</h2>
+<p>
+    A URL view is read by sending a 'get' request through the <code>AppWebRouter</code>
+    {{view: url=app://examples/url-view}}
+    You can't pass a model into a URL view, but you can give it query parameters, and
+    the controller can run code.
+    {{view: url=app://examples/url-view?text=hello}}
+    Editing the view used by the controller will result in a hot-reload.
 </p>
 <p>
     Views can be repeated by embedding in a <code>for</code> list:
@@ -33,11 +58,25 @@
 <ul>
     {{for:listOfThings}}
     <li>
-        {{view: model=item, path=app://examples/element-view}}
+        {{view: model=item, path=views/examples/element-view}}
     </li>
     {{end:listOfThings}}
 </ul>
+
+<h2>Error handling and invalid uses</h2>
 <p>
     This is what a view looks like if no matching path is found:<br/>
-    {{view: model=model.subViewData, path=app://not-a-controller/not-a-view}}
+    {{view: model=model.subViewData, path=not-a-path/not-a-view}}
+</p>
+<p>
+    This is what a URL view looks like if the controller crashes:<br/>
+    {{view: url=app://test/bad-method}}
+</p>
+<p>
+    This is what a view looks like if neither a path nor a url is given:<br/>
+    {{view: model=model.what}}
+</p>
+<p>
+    This is what a view looks like if the 'item' model is used outside of a 'for' block:<br/>
+    {{view: model=item, path=views/examples/a-sub-view.html}}
 </p>

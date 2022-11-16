@@ -30,17 +30,23 @@ public class HotReloadMonitor {
             Log.w(TAG, "AddHotReloadAsset was given an empty path");
             return;
         }
+        if (hotReloadAssets.containsKey(path)) return;
 
         hotReloadAssets.put(path, new TemplateResponse());
     }
+
+    /** Add the path of an template page to the list of paths that should trigger a hot-reload */
     public static void AddHotReloadPage(TemplateResponse tmpl) {
         if (tmpl == null){
             Log.w(TAG, "AddHotReloadPage was given an empty template");
             return;
         }
 
-        // see e.s.miniweb.core.template.TemplateEngine#getDocTemplate  -->
-        hotReloadAssets.put("views/" + tmpl.TemplatePath + ".html", tmpl);
+        String key = "views/" + tmpl.TemplatePath + ".html";// see e.s.miniweb.core.template.TemplateEngine#getDocTemplate
+
+        if (hotReloadAssets.containsKey(key)) return;
+
+        hotReloadAssets.put(key, tmpl);
     }
 
     /** If true, the last rendered page is available for hot-reload */
@@ -66,6 +72,7 @@ public class HotReloadMonitor {
         target.LastPageChangeDate = changeDate; // update the date for next time
         return true; // yes, this asset has changed
     }
+
     public static String GetHotController(){
         return (lastPageRendered == null) ? "" : lastPageRendered.Controller;
     }public static String GetHotMethod(){

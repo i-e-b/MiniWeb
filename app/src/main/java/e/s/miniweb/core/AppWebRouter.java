@@ -26,7 +26,7 @@ public class AppWebRouter extends WebViewClient {
     public boolean clearHistory;
 
     public AppWebRouter(AssetLoader assets, MainActivity main){
-        template = new TemplateEngine(assets);
+        template = new TemplateEngine(assets, this);
         this.assets = assets;
         this.mainView = main;
 
@@ -125,7 +125,7 @@ public class AppWebRouter extends WebViewClient {
                 return pageResult;
 
             } else if (Objects.equals(scheme, "app")) { // controller pages
-                pageResult.data = getControllerResponse(request); // Run the controller & template engine
+                pageResult.data = getControllerResponse(request, false); // Run the controller & template engine
                 pageResult.mimeType = HtmlMime;
                 pageResult.hotReloadCandidate = true;
                 return pageResult;
@@ -163,7 +163,7 @@ public class AppWebRouter extends WebViewClient {
     /**
      * Render a page through a controller method
      */
-    private String getControllerResponse(WebResourceRequest request) throws Exception {
+    public String getControllerResponse(WebResourceRequest request, boolean isPartialView) throws Exception {
         String pageString;
         String controller = request.getUrl().getHost();
         String method = request.getUrl().getPath();
@@ -183,16 +183,17 @@ public class AppWebRouter extends WebViewClient {
         // Either a normal call, or hot reload failed.
         if (response == null) {
             // Call the controller for a page render
-            response = template.Run(controller, method, params, request);
+            response = template.Run(controller, method, params, request, isPartialView);
         }
 
-        ClearHotLoad();
+        if (!isPartialView) ClearHotLoad();
 
-        if (response == null) {
-            // Output an error page
+        if (response == null) {// Output an error page
             pageString = errorPage("Missing page", controller, method);
-        } else if (response.startsWith("<!doctype html>") || response.startsWith("<html")) {
-            pageString = response; // template is for a complete doc. Dev is responsible for styles etc.
+        } else if (isPartialView) { // should not add document wrappers
+            pageString = response;
+        } else if (response.startsWith("<!doctype html>") || response.startsWith("<html")) { // already has document wrappers
+            pageString = response;
         } else {
             // We got a body fragment. Wrap the response in a default document and deliver
             pageString =
