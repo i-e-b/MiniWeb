@@ -78,6 +78,7 @@ public class EmulatorHostCall {
      * @param path path and query to send to host. Does NOT need leading '/'
      */
     public static String queryHostForString(String path){
+        if (!HotReloadMonitor.TryLoadFromHost) return "";
         // This just shuts up a weird Android system warning
         TrafficStats.setThreadStatsTag(512);
 
@@ -117,6 +118,7 @@ public class EmulatorHostCall {
      * @param path path and query to send to host. Does NOT need leading '/'
      */
     public static InputStream queryHostForData(String path){
+        if (!HotReloadMonitor.TryLoadFromHost) return null;
         // This just shuts up a weird Android system warning
         TrafficStats.setThreadStatsTag(512);
 

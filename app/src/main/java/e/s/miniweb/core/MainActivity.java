@@ -30,7 +30,6 @@ public class MainActivity extends Activity {
     private AppWebRouter webRouter;
     private JsCallbackManager manager;
     private AssetLoader loader;
-    private ActionBar titleBar;
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
 
@@ -135,7 +134,8 @@ public class MainActivity extends Activity {
     private void hideTitle(){
         runOnUiThread(() -> {
             try {
-                if (titleBar != null && titleBar.isShowing()) {
+                ActionBar titleBar = this.getActionBar();
+                if (titleBar != null) {
                     titleBar.hide();
                 }
             } catch (Exception ex){
@@ -148,6 +148,7 @@ public class MainActivity extends Activity {
         if (color == null) return;
         try {
             ColorDrawable colorDrawable = new ColorDrawable(Color.parseColor(color)); // css-like color, e.g. "#0F9D58"
+            ActionBar titleBar = this.getActionBar();
             titleBar.setBackgroundDrawable(colorDrawable);
         } catch(Exception ex) {
             Log.e(TAG, ex.toString());
@@ -158,6 +159,7 @@ public class MainActivity extends Activity {
     public void PopupTitle(String message, String color) {
         runOnUiThread(() -> {
             try {
+                ActionBar titleBar = this.getActionBar();
                 if (titleBar != null) {
                     setTitleColor(color);
                     titleBar.setTitle(message);
@@ -192,7 +194,6 @@ public class MainActivity extends Activity {
         hasLoaded = false;
         this.setTitle("Loading..."); // temp message as soon as possible
 
-        titleBar = this.getActionBar();
         // Do any heavy lifting out on a non-ui thread, so
         // the 'loading' message gets a chance to update
         new Thread(this::loadWebViewWithLocalClient).start();
@@ -248,6 +249,8 @@ public class MainActivity extends Activity {
                     return; // DO NOT continue pumping `hotReloadHandler`
                 }
             }
+
+            if (!HotReloadMonitor.TryLoadFromHost) return;
 
             // Do the hot-reload checks
             try {
