@@ -12,6 +12,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Objects;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
+
 /**
  * Utilities for connecting to a helper service when
  * this app is running on an emulator hosted by a PC
@@ -65,7 +68,7 @@ public class EmulatorHostCall {
                 conn.disconnect();
             }
         } catch (android.os.NetworkOnMainThreadException nex) {
-            Log.e(TAG, "hostIsAvailable call made on main activity thread. This was blocked by Android.");
+            Log.e(TAG, App.str(R.string.err_host_call_blocked));
             return false;
         } catch (Exception e){
             return false;
@@ -107,7 +110,7 @@ public class EmulatorHostCall {
                 conn.disconnect();
             }
         } catch (Exception e){
-            Log.i(TAG, "failure in query host (string). Probably not connected.");
+            Log.i(TAG, App.str(R.string.err_host_str_query));
             return "";
         }
     }
@@ -152,7 +155,7 @@ public class EmulatorHostCall {
                 conn.disconnect();
             }
         } catch (Exception e){
-            Log.i(TAG, "failure in query host (data). Probably not connected.");
+            Log.i(TAG, App.str(R.string.err_host_data_query));
             return null;
         }
     }

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- User facing strings -->
+    <string name="app_name">MiniWeb app</string>
+    <string name="app_loading">Loading…</string>
+
+    <!-- Path fragments -->
+    <string name="path_assets">assets/</string>
+    <string name="path_views">views/</string>
+    <string name="path_html">.html</string>
+    <string name="path_internal">internal/</string>
+
+    <!-- Templating fragments -->
+    <string name="tmpl_error_head">&lt;h1&gt;Internal error&lt;/h1&gt;&lt;pre&gt;&#10;&#13;</string>
+    <string name="tmpl_error_tail">&lt;/pre&gt;</string>
+    <string name="tmpl_redirect">redirect.html</string>
+    <string name="tmpl_open_brace">{{</string>
+    <string name="tmpl_close_brace">}}</string>
+    <string name="tmpl_quot_open">\'{{</string>
+    <string name="tmpl_quot_close">\'}}</string>
+    <string name="tmpl_dir_for">{{for:</string>
+    <string name="tmpl_dir_view">{{view:</string>
+    <string name="tmpl_dir_needs">{{needs:</string>
+    <string name="tmpl_dir_end">{{end:</string>
+    <string name="tmpl_mark_item">item:</string>
+    <string name="tmpl_param_for">for</string>
+    <string name="tmpl_param_end">end</string>
+    <string name="tmpl_param_view">view</string>
+    <string name="tmpl_param_url">url</string>
+    <string name="tmpl_param_model">model</string>
+    <string name="tmpl_param_path">path</string>
+    <string name="tmpl_param_item">item</string>
+
+    <!-- Logging and error messages -->
+    <string name="err_host_call_blocked">Emulator host call made on main activity thread. This was blocked by Android.</string>
+    <string name="err_host_load_fail">Load from host failed. Trying APK;</string>
+    <string name="err_host_str_query">failure in query host (string). Probably not connected.</string>
+    <string name="err_host_data_query">failure in query host (data). Probably not connected.</string>
+    <string name="err_reload_empty_path">AddHotReloadAsset was given an empty path</string>
+    <string name="err_reload_empty_template">AddHotReloadPage was given an empty template</string>
+    <string name="err_reload_bad_query">Unexpected hot reload query: </string>
+    <string name="err_reload_null_query">Null reference in hot reload query: </string>
+    <string name="err_reload_fail">Hot reload failed: </string>
+    <string name="err_tmpl_bad_method">Unknown web method!</string>
+    <string name="err_tmpl_invalid_method">Invalid web method!</string>
+    <string name="err_tmpl_bad_for_block">Could not interpret \'for\' block. Check markup and data types.</string>
+    <string name="err_tmpl_bad_view_block">Could not interpret \'view\' block. Check markup and data types.</string>
+    <string name="err_tmpl_bad_end_block">Unexpected \'end\' tag. Either bad markup, or a block was not interpreted correctly.</string>
+    <string name="err_tmpl_unexpected">Unexpected error in template transformer</string>
+    <string name="err_tmpl_url_view_fail">URL view block failed</string>
+    <string name="err_tmpl_err_mark">[ERROR]</string>
+    <string name="err_tmpl_invalid_view">Invalid view block: no url or path. Check the mark-up, and ensure \',\' separators</string>
+    <string name="err_tmpl_view_lost">Failed to load view!</string>
+    <string name="err_tmpl_view_unexpected">Failed to load view block</string>
+    <string name="err_tmpl_view_no_model">Invalid view block: empty model.</string>
+
+    <string name="tag_err"> Error=</string>
+    <string name="tag_file"> File=</string>
+    <string name="tag_line"> Line=</string>
+    <string name="tag_parent"> Parent=</string>
+    <string name="tag_target"> Target=</string>
+</resources>

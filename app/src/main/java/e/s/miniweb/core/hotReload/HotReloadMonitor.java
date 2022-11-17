@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
 import e.s.miniweb.core.template.TemplateEngine;
 import e.s.miniweb.core.template.TemplateResponse;
 
@@ -33,7 +35,7 @@ public class HotReloadMonitor {
     /** Add the path of an asset to the list of paths that should trigger a hot-reload */
     public static void AddHotReloadAsset(String path) {
         if (path == null){
-            Log.w(TAG, "AddHotReloadAsset was given an empty path");
+            Log.w(TAG, App.str(R.string.err_reload_empty_path));
             return;
         }
         if (hotReloadAssets.containsKey(path)) return;
@@ -44,11 +46,11 @@ public class HotReloadMonitor {
     /** Add the path of an template page to the list of paths that should trigger a hot-reload */
     public static void AddHotReloadPage(TemplateResponse tmpl) {
         if (tmpl == null){
-            Log.w(TAG, "AddHotReloadPage was given an empty template");
+            Log.w(TAG, App.str(R.string.err_reload_empty_template));
             return;
         }
 
-        String key = "views/" + tmpl.TemplatePath + ".html";// see e.s.miniweb.core.template.TemplateEngine#getDocTemplate
+        String key = App.str(R.string.path_views) + tmpl.TemplatePath + App.str(R.string.path_html);// see .core.template.TemplateEngine#getDocTemplate
 
         if (hotReloadAssets.containsKey(key)) return;
 
@@ -58,7 +60,7 @@ public class HotReloadMonitor {
     /** If true, the last rendered page is available for hot-reload */
     public static boolean HasAssetChanged(String filePath, String changeDate) {
         if (!hotReloadAssets.containsKey(filePath)) {
-            Log.w(TAG, "Unexpected hot reload query: "+filePath);
+            Log.w(TAG, App.str(R.string.err_reload_bad_query)+filePath);
             return false; // not a path we recognise
         }
         if (Objects.equals(changeDate, "")){
@@ -66,7 +68,7 @@ public class HotReloadMonitor {
         }
 
         TemplateResponse target = hotReloadAssets.get(filePath);
-        if (target == null){Log.e(TAG, "Null reference in hot reload query: "+filePath);return false;}
+        if (target == null){Log.e(TAG, App.str(R.string.err_reload_null_query)+filePath);return false;}
 
 
         if (target.LastPageChangeDate == null){ // haven't captured original date
@@ -96,10 +98,10 @@ public class HotReloadMonitor {
     /** Just do the render phase of `Run` */
     public static String RunHotReload(TemplateEngine template) {
         try {
-            template.copyLinesToTemplate("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            template.copyLinesToTemplate( App.str(R.string.path_views) + lastPageRendered.TemplatePath + App.str(R.string.path_html), lastPageRendered);
             return template.transformTemplate(lastPageRendered, null);
         } catch (Exception ex){
-            Log.e(TAG, "Hot reload failed: "+ex);
+            Log.e(TAG, App.str(R.string.err_reload_fail)+ex);
             return null; // will cause a normal load
         }
     }
