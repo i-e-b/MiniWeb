@@ -5,6 +5,24 @@
     When the app is running in an emulator, we <i>should</i> be
     able to access services running on the host machine.
 </p>
+{{for:hotReloadOn}}
+<p>
+    <b>Note:</b> as hot-reload is currently running, pages will
+    take longer to open that normal (especially images).
+    You can restart this app with the emulator host off to see
+    the normal load speed.
+</p>
+{{end:hotReloadOn}}
+{{for:hotReloadOff}}
+<p>
+    Hot-reload is currently off because the emulator host
+    did not respond in time when the Android app was starting.
+</p>
+<p>
+    If you started the emulator host after the Android app,
+    you can restart the app now to enable hot-reload.
+</p>
+{{end:hotReloadOff}}
 <p>
     That means, if you're running this on your development machine,
     we can contact the host.

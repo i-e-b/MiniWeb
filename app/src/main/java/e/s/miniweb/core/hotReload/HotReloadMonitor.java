@@ -24,6 +24,12 @@ public class HotReloadMonitor {
         return hotReloadAssets.keySet();
     }
 
+
+    /** Returns true if view data is available to do a hot reload */
+    public static boolean CanReload() {
+        return lastPageRendered != null && !hotReloadAssets.isEmpty();
+    }
+
     /** Add the path of an asset to the list of paths that should trigger a hot-reload */
     public static void AddHotReloadAsset(String path) {
         if (path == null){

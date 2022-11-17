@@ -1,5 +1,7 @@
 package e.s.miniweb.core;
 
+import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
 import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
@@ -15,7 +17,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 
-import java.io.File;
 import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
@@ -26,8 +27,9 @@ import e.s.miniweb.core.hotReload.HotReloadMonitor;
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private WebView view;
-    private AppWebRouter client;
-    private JsCallbackManager manager;
+    private static AppWebRouter webRouter;
+    private static JsCallbackManager manager;
+    private static AssetLoader loader;
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
 
@@ -43,13 +45,20 @@ public class MainActivity extends Activity {
         // We're off the ui thread, so can do any start-up processes here...
         Looper.prepare();
 
-        // hook the view to the app client and request the home page
-        AssetLoader loader = new AssetLoader(getAssets());
-        client = new AppWebRouter(loader, this); // <-- route definitions are in here
-        manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
-        hotReloadHandler = new Handler();
+        // This can be called in two situations:
+        // 1. The app is doing a fresh start. Everything will be null
+        // 2. The app is doing a warm start. Lots of our objects will already exist
 
-        tryStartHotReloadLoop();
+        // hook the view to the app client and request the home page
+        if (loader == null) loader = new AssetLoader(getAssets());
+        if (webRouter == null) webRouter = new AppWebRouter(loader, this); // <-- route definitions are in here
+        if (manager == null) manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
+
+        // Hot-reload loop (with self terminate if not connected)
+        if (hotReloadHandler == null) {
+            hotReloadHandler = new Handler();
+            startHotReloadRepeater();
+        }
 
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
@@ -62,28 +71,25 @@ public class MainActivity extends Activity {
 
             // bind handlers
             view.setWebChromeClient(new BrowserEventListener(this));
-            view.setWebViewClient(client);
+            view.setWebViewClient(webRouter);
             view.addJavascriptInterface(manager, "manager");
 
             // Turn off caching
             view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 
-            // send the view to home page, with a special flag to say this is the first page since app start.
-            view.loadUrl("app://home"); // we can play fast-and-loose with the url structure.
+            // this is either the first start since the app launched,
+            // OR we have been restarted due to a system event
+            // (such as switching dark/light mode)
+
+            hasLoaded = false;
+            if (HotReloadMonitor.CanReload()){ // we can resume our previous screen
+                doHotReload();
+                hideTitle();
+            } else { // fresh start. Go to home page.
+                view.loadUrl("app://home");
+            }
         });
         Looper.loop();
-    }
-
-    private void tryStartHotReloadLoop() {
-        // Try to contact the hot-reload service.
-        // Run the helper like `.\TinyWebHook.exe "C:\gits\MiniWeb\app\src\main\assets"`
-        if (EmulatorHostCall.hostIsAvailable()) {
-            // Set a timer running that will try to reload pages if the source changes.
-            Log.i(TAG, "Emulator host service found. Starting hot reload.");
-            startHotReloadRepeater();
-        } else {
-            Log.i(TAG, "Emulator host service did not respond. Hot reload not available");
-        }
     }
 
     /** Handle back button.
@@ -187,32 +193,53 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+        Log.i(TAG, "main activity is stopped");
         stopHotReloadRepeater();
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
-        tryStartHotReloadLoop();
+    protected void onResume() {
+        super.onResume();
+        Log.i(TAG, "main activity is resuming. Hot reload: "+HotReloadMonitor.CanReload());
+        startHotReloadRepeater();
     }
 
-    /**
-     * The target audience are on constrained devices, and
-     * we generally favor small size over best speed.
-     * When exiting, we try to clean up as much Android
-     * cache junk as possible.
-     */
     @Override
     protected void onDestroy(){
         super.onDestroy();
+        view.copyBackForwardList();
+        todo : looks like we need to maintain our own back/forward list!
+        Log.i(TAG, "main activity is destroyed");
         stopHotReloadRepeater();
-        cleanAllCacheFiles();
     }
 
-    /** Background task that checks for changes to assets used by the current page */
+
+    /** if true, we will check for emulator host, and stop running if not found */
+    public boolean doFirstEmuHostCheck = true;
+    /** Background task that checks for changes to assets used by the current page
+     * DO NOT call this directly. Use `hotReloadHandler.post(HotReloadAssetChecker);`
+     * to run in the correct thread. */
     Runnable HotReloadAssetChecker = new Runnable() {
+
         @Override
-        public void run() {
+        public void run() { // this should always run on our background thread.
+
+            if (doFirstEmuHostCheck){
+                doFirstEmuHostCheck = false;
+                Log.i(TAG, "Checking for hot-reload service");
+
+                if (EmulatorHostCall.hostIsAvailable()){
+                    Log.i(TAG, "Hot-reload service connected!");
+                    HotReloadMonitor.TryLoadFromHost = true;
+                    hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again
+                } else {
+                    Log.i(TAG, "Hot-reload service not found. Deactivating");
+                    HotReloadMonitor.TryLoadFromHost = false;
+                    return; // DO NOT continue pumping `hotReloadHandler`
+                }
+            }
+
+            // Do the hot-reload checks
             try {
                 // Get list of assets that have been loaded since last navigation event
                 Set<String> tmplPaths = HotReloadMonitor.GetHotReloadPaths();
@@ -220,6 +247,8 @@ public class MainActivity extends Activity {
                     return;
                 }
 
+                boolean doReload = false;
+                
                 // For each asset that was requested by the current page (including the page itself)
                 for (String tmplPath : tmplPaths) {
                     // Ask the emulator host what the last modified date was
@@ -227,22 +256,14 @@ public class MainActivity extends Activity {
                     String modifiedDate = EmulatorHostCall.queryHostForString(path);
 
                     // If the date has changed, we should reload the *page* (not just the asset)
-                    boolean doReload = HotReloadMonitor.HasAssetChanged(tmplPath, modifiedDate);
-
-                    if (doReload) {
-                        HotReloadMonitor.TryLoadFromHost = true; // make sure hot-load is switched on
-
-                        // Make sure we're only re-rendering, and not calling the controller again.
-                        client.ExpectHotReload(
-                                HotReloadMonitor.GetHotController(),
-                                HotReloadMonitor.GetHotMethod(),
-                                HotReloadMonitor.GetHotParams()
-                        );
-
-                        runOnUiThread(() -> {
-                            view.reload(); // Ask the web view to request and render the current page
-                        });
+                    if (HotReloadMonitor.HasAssetChanged(tmplPath, modifiedDate)) {
+                        doReload = true;
+                        break;
                     }
+                }
+
+                if (doReload) {
+                    doHotReload();
                 }
             } catch (Exception ex){
                 Log.w(TAG, "error in emulator host loop: "+ex);
@@ -252,51 +273,53 @@ public class MainActivity extends Activity {
         }
     };
 
+    /** Reload the current view from existing data */
+    private void doHotReload() {
+        HotReloadMonitor.TryLoadFromHost = true; // make sure hot-load is switched on
+
+        String controller = HotReloadMonitor.GetHotController();
+        String method = HotReloadMonitor.GetHotMethod(); // ???
+        String params = HotReloadMonitor.GetHotParams();
+
+        // Make sure we're only re-rendering, and not calling the controller again.
+        webRouter.ExpectHotReload(controller, method, params);
+
+        String url = "app://"+controller+"/"+method+ (params==null? "" : "?"+params);
+
+        Log.i(TAG, "Reloading: "+url);
+
+        runOnUiThread(() -> {
+            view.loadUrl(url); // Ask the web view to request and render the current page
+        });
+    }
+
     void startHotReloadRepeater() {
-        Log.i(TAG, "Starting looper");
-        HotReloadMonitor.TryLoadFromHost = true;
-        HotReloadAssetChecker.run();
+        Log.i(TAG, "Starting hot-reload looper");
+        doFirstEmuHostCheck = true;
+        if (hotReloadHandler != null) hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval);
     }
 
     void stopHotReloadRepeater() {
         HotReloadMonitor.TryLoadFromHost = false;
-        hotReloadHandler.removeCallbacks(HotReloadAssetChecker);
-        Log.i(TAG, "Stopping looper");
-    }
-
-    private void cleanAllCacheFiles() {
-        try {
-            Log.i(TAG, "Shutdown-cleanup starting");
-            boolean ok1 = deleteDir(this.getExternalCacheDir());
-            boolean ok2 = deleteDir(this.getCacheDir());
-            boolean ok3 = deleteDir(this.getCodeCacheDir());
-            Log.i(TAG, "Shutdown-cleanup complete: "+ok1+", "+ok2+", "+ok3);
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to do shut-down clean-up "+ e);
-        }
-    }
-
-    /** Recursively delete a directory */
-    public static boolean deleteDir(File dir) {
-        if (dir != null && dir.isDirectory()) {
-            String[] children = dir.list();
-            if (children == null) return true;
-            for (String child : children) {
-                boolean success = deleteDir(new File(dir, child));
-                if (!success) {
-                    return false;
-                }
-            }
-            return dir.delete();
-        } else if(dir!= null && dir.isFile()) {
-            return dir.delete();
-        } else {
-            return false; // not a dir or file?
-        }
+        if (hotReloadHandler != null) hotReloadHandler.removeCallbacks(HotReloadAssetChecker);
+        Log.i(TAG, "Stopping hot-reload looper");
     }
 
     /** Ask that the 'back' history is cleared once the page is finished loading */
     public void clearHistory() {
-        client.clearHistory = true; // view.clearHistory() doesn't work, so we need this convoluted mess.
+        webRouter.clearHistory = true; // view.clearHistory() doesn't work, so we need this convoluted mess.
+    }
+
+    /**
+     * Returns `true` if the device is currently set to dark mode.
+     * Return `false` if the device is in light mode, or does not support modes.
+     */
+    public boolean inDarkMode() {
+        try {
+            int uiMode = getResources().getConfiguration().uiMode;
+            return ((uiMode & UI_MODE_NIGHT_YES) > 0);
+        } catch (Exception ex){
+            return false;
+        }
     }
 }

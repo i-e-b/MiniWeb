@@ -1,5 +1,7 @@
 package e.s.miniweb;
 
+import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
+
 import android.webkit.JavascriptInterface;
 
 import e.s.miniweb.core.MainActivity;
@@ -30,7 +32,7 @@ public class JsCallbackManager {
 
 
     /*
-    These methods are used to drive the UI, and should not be modified
+    The methods below are used to drive the UI, and should NOT be modified
      */
 
     //region Critical methods
@@ -65,6 +67,16 @@ public class JsCallbackManager {
     public void clearHistory() {
         mainActivity.clearHistory();
     }
+
+    /**
+     * Returns `true` if the device is currently set to dark mode.
+     * Return `false` if the device is in light mode, or does not support modes.
+     */
+    @JavascriptInterface // this annotation MUST be added to any method you call from JavaScript
+    public boolean inDarkMode() {
+        return mainActivity.inDarkMode();
+    }
+
     //endregion
 
 }

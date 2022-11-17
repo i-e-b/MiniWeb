@@ -1,0 +1,13 @@
+
+/* put a backdrop image on all pages */
+html {
+    color:#eee;
+    background: url("asset://images/moon.png") no-repeat center center fixed;
+    background-size: contain;
+    background-color: #444
+}
+
+code {
+    background-color: #000;
+    color: #fab;
+}

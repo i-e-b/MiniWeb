@@ -1,9 +1,13 @@
+/*
+    The styles in "default.css" are applied in both light and dark modes.
+    These styles should set sizes, layouts, etc.
 
-/* put a backdrop image on all pages */
-html {
-    background: url("asset://images/backdrop.png") no-repeat center center fixed;
-    background-size: cover;
-}
+    Colouring should be done in "default-dark.css" and "default-light.css"
+    which will be picked based on the user's device preferences.
+
+    If you don't want to support dark and light modes, you can put all
+    your styling in this file.
+*/
 
 
 /* Make all links like buttons */
@@ -33,9 +37,7 @@ a:active {
 code {
     padding-left: 0.5rem;
     padding-right: 0.5rem;
-    background-color: #eee;
     font-size: large;
-    color: #700;
     font-face: fixed;
 }
 
@@ -71,6 +73,17 @@ input[type=text]:focus {
     border: 3px solid #88f;
 }
 
+/* make a div stand out prominently from the rest of the page */
+.pop-out {
+    padding:5px;
+    border-radius: 5px;
+    border: 1px solid #777;
+    box-shadow: 0px 5px 13px 0px #000;
+    background-color: #eee;
+    color: #000;
+    margin-top:5px;
+    margin-bottom:13px;
+}
 
 /* SVG background for a demo */
 

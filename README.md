@@ -15,8 +15,10 @@ when built in release mode.
 Things to do:
 
 - [x] Add partial views, including by taking a model sub-item
+- [x] Dark mode support (switchable css files & a js hook ?)
+- [ ] Use the hot reload to continue view when restarted (like when changing dark mode)
 - [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
-- [ ] View export / tooling -- ideally so pages can be edited with browser inspector etc.
+- [ ] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
 
 ## How it works
 

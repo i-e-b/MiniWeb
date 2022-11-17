@@ -16,8 +16,11 @@ import java.util.Objects;
  * this app is running on an emulator hosted by a PC
  */
 public class EmulatorHostCall {
+    /** Time allowed for checking if the host is connected. This should be reasonably short */
+    private static final int WAKE_TIME_MS = 500;
+
     /** Time allowed for contacting the emulator host. This should be short */
-    private static final int CONNECT_TIME_MS = 150;
+    private static final int CONNECT_TIME_MS = 100;
 
     /** Time allowed for transferring data from emulator host */
     private static final int READ_TIME_MS = 2500;
@@ -31,22 +34,26 @@ public class EmulatorHostCall {
 
     /**
      * Test if Emulator host is available.
+     * This CAN NOT be run on the main UI thread.
      * @return true if host responded. False otherwise
      */
     public static boolean hostIsAvailable(){
         try {
-            URL url = new URL(HOST_BASE+"host");
+            URL url = new URL(HOST_BASE + "host");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 // Set short time-out. The host server should respond in a few ms.
-                conn.setConnectTimeout(CONNECT_TIME_MS);
-                conn.setReadTimeout(CONNECT_TIME_MS); // deliberately the wrong one
+                conn.setConnectTimeout(WAKE_TIME_MS);
+                conn.setReadTimeout(WAKE_TIME_MS);
 
                 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
                 return Objects.equals(br.readLine(), HOST_UP_MSG);
             } finally {
                 conn.disconnect();
             }
+        } catch (android.os.NetworkOnMainThreadException nex) {
+            Log.e(TAG, "hostIsAvailable call made on main activity thread. This was blocked by Android.");
+            return false;
         } catch (Exception e){
             return false;
         }

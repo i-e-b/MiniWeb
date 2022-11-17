@@ -22,7 +22,7 @@ public class AppWebRouter extends WebViewClient {
     private final String HtmlMime = "text/html";
     final private TemplateEngine template;
     private final AssetLoader assets;
-    private MainActivity mainView;
+    private final MainActivity mainView;
     public boolean clearHistory;
 
     public AppWebRouter(AssetLoader assets, MainActivity main){
@@ -196,12 +196,28 @@ public class AppWebRouter extends WebViewClient {
             pageString = response;
         } else {
             // We got a body fragment. Wrap the response in a default document and deliver
-            pageString =
-                    "<!doctype html><html><head><meta charset=\"UTF-8\"><link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\"></head>" +
-                    "<body>" + response + "</body></html>";
+            pageString = wrapPageStringWithHtmlHeaders(response);
         }
 
         return pageString;
+    }
+
+    private String wrapPageStringWithHtmlHeaders(String response) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("<!doctype html><html><head><meta charset=\"UTF-8\">"); // document with header and char set.
+        sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\">"); // default styles for both light & dark
+
+        if (mainView.inDarkMode()){
+            sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default-dark.css\" type=\"text/css\">");
+        } else {
+            sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default-light.css\" type=\"text/css\">");
+        }
+        sb.append("</head><body>");
+        sb.append(response);
+        sb.append("</body></html>");
+
+        return sb.toString();
     }
 
     private String errorPage(String message, String controller, String method) {

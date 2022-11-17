@@ -1,0 +1,22 @@
+
+/* put a backdrop image on all pages */
+html {
+    background: url("asset://images/sun.png") no-repeat center center fixed;
+    background-size: contain;
+    background-color: #fff
+}
+
+code {
+    background-color: #eee;
+    color: #700;
+}
+
+.pop-out {
+    padding:5px;
+    border-radius: 5px;
+    border: 1px solid #777;
+    box-shadow: 0px 5px 13px 0px #000;
+    background-color: #eee;
+    margin-top:5px;
+    margin-bottom:13px;
+}
