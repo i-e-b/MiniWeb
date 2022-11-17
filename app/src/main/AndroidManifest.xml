@@ -12,7 +12,7 @@
 
     <application
         android:allowBackup="true"
-        android:name=".core.AppCore"
+        android:name=".core.App"
         android:icon="@mipmap/ic_launcher"
         android:label="MiniWeb app"
         android:roundIcon="@mipmap/ic_launcher_round"

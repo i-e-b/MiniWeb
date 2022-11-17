@@ -1,6 +1,7 @@
 package e.s.miniweb.core;
 
 import android.app.Application;
+import android.content.res.Resources;
 import android.os.Build;
 import android.os.StrictMode;
 import android.os.strictmode.Violation;
@@ -8,11 +9,12 @@ import android.util.Log;
 
 import e.s.miniweb.BuildConfig;
 
-public class AppCore extends Application {
+public class App extends Application {
     private static final String TAG = "AppCore";
+    private static Resources resources;
 
     /** Run any very-early phase code */
-    public AppCore() {
+    public App() {
         Log.i(TAG, "Core app coming up");
 
         // If built in debug mode, enable "strict" resource monitoring.
@@ -39,6 +41,18 @@ public class AppCore extends Application {
                         .build());
             }
         }
+    }
+
+    /** get a string by resource id */
+    public static String str(int id) {
+        return resources.getString(id);
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        resources = getResources();
     }
 
     private void logV(Violation v) {
