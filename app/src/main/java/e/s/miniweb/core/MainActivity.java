@@ -98,9 +98,9 @@ public class MainActivity extends Activity {
      * */
     @Override
     public void onBackPressed() {
-        if (view.canGoBack()) { // have history. Go back
-            view.goBack();
-        } else { // No browser history...
+        // try to go back a page
+        if (!webRouter.goBack(view)) {
+            // nothing to go back to. Maybe exit app?
             long pressTime = System.currentTimeMillis();
 
             if (Math.abs(pressTime - lastPress) > 2500){ // last press was more that 2.5 seconds ago. Ignore
@@ -208,7 +208,6 @@ public class MainActivity extends Activity {
     protected void onDestroy(){
         super.onDestroy();
         view.copyBackForwardList();
-        todo : looks like we need to maintain our own back/forward list!
         Log.i(TAG, "main activity is destroyed");
         stopHotReloadRepeater();
     }

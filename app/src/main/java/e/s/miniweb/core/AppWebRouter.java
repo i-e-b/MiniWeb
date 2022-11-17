@@ -1,7 +1,9 @@
 package e.s.miniweb.core;
 
 import android.net.Uri;
+import android.os.Build;
 import android.util.Log;
+import android.webkit.SafeBrowsingResponse;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -11,6 +13,7 @@ import android.webkit.WebViewClient;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Objects;
+import java.util.Stack;
 
 import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.hotReload.AssetLoader;
@@ -20,9 +23,10 @@ import e.s.miniweb.core.template.TemplateEngine;
 public class AppWebRouter extends WebViewClient {
     private static final String TAG = "AppWebRouter";
     private final String HtmlMime = "text/html";
-    final private TemplateEngine template;
+    private final TemplateEngine template;
     private final AssetLoader assets;
     private final MainActivity mainView;
+    private final Stack<String> historyStack;
     public boolean clearHistory;
 
     public AppWebRouter(AssetLoader assets, MainActivity main){
@@ -30,40 +34,10 @@ public class AppWebRouter extends WebViewClient {
         this.assets = assets;
         this.mainView = main;
 
+        historyStack = new Stack<>();
+
         // Prepare all the controllers for everything
         ControllerBindings.BindAllControllers();
-    }
-
-    @Override
-    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-        // This gets called only for page-to-page navigation requests, and not
-        // for any in-page asset loading requests. This provides a useful hook
-        // where we can clear the 'hot-reload' asset list.
-        HotReloadMonitor.ClearReload();
-
-        // We return value true if we want to do anything OTHER than navigation.
-        // Like, if we wanted a link to show some kind of Android system screen.
-        // If the intent is to handle the click by navigating to one of our own,
-        // self-generated pages, we return false and use shouldInterceptRequest.
-        return false;
-    }
-
-    @Override
-    public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-        Log.e(TAG, error.toString());
-    }
-
-    @Override
-    public void onPageFinished(WebView view, String url)
-    {
-        mainView.pageLoaded();
-        if (clearHistory)
-        {
-            clearHistory = false;
-            view.clearHistory();
-        }
-        super.onPageFinished(view, url);
-        view.clearCache(true); // clear any cached files. We don't need them
     }
 
     /**
@@ -96,6 +70,64 @@ public class AppWebRouter extends WebViewClient {
         // Ok, looks like a string. Encode and output
         InputStream data = new ByteArrayInputStream(pageString.data.getBytes());
         return new WebResourceResponse(pageString.mimeType, "utf-8", data);
+    }
+
+    @Override
+    public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+        // This gets called only for page-to-page navigation requests, and not
+        // for any in-page asset loading requests. This provides a useful hook
+        // where we can clear the 'hot-reload' asset list.
+        HotReloadMonitor.ClearReload();
+
+        // We return value true if we want to do anything OTHER than navigation.
+        // Like, if we wanted a link to show some kind of Android system screen.
+        // If the intent is to handle the click by navigating to one of our own,
+        // self-generated pages, we return false and use shouldInterceptRequest.
+        return false;
+    }
+
+    @Override
+    public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+        Log.e(TAG, error.toString());
+    }
+
+    @Override
+    public void onPageFinished(WebView view, String url)
+    {
+        super.onPageFinished(view, url);
+
+        mainView.pageLoaded();
+        if (clearHistory)
+        {
+            clearHistory = false;
+            historyStack.clear();
+        }
+
+        // if the new page is different to the old, add it to the history stack
+        if (historyStack.empty() || !Objects.equals(url, historyStack.peek())) historyStack.push(url);
+
+        view.clearHistory(); // we don't use the real history
+        view.clearCache(true); // clear any cached files. We don't need them
+    }
+
+    /** try to reload previous page. If not possible, returns false */
+    public boolean goBack(WebView view) {
+        if (view == null) return false;
+        if (historyStack.size() < 2) {
+            return false; // current page is top of stack
+        }
+        ClearHotLoad();
+        historyStack.pop(); // remove current page
+        view.loadUrl(historyStack.pop()); // load previous page (it will be put back on when loaded)
+        return true;
+    }
+
+    @Override
+    public void onSafeBrowsingHit(WebView view, WebResourceRequest request, int threatType, SafeBrowsingResponse callback) {
+        Log.i(TAG, "WebView tagged resource as a threat. Ignoring.");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            callback.proceed(false);
+        }
     }
 
     /** Decode what kind of thing is being requested,
