@@ -1,12 +1,11 @@
 package e.s.miniweb.core.hotReload;
 
 import android.content.res.AssetManager;
+import android.net.TrafficStats;
 import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 
 /** Loads files from either the APK's assets, or the emulator host */
 public class AssetLoader {
@@ -19,14 +18,10 @@ public class AssetLoader {
     }
 
     /** Read a file either from the emulator host or from the APK */
-    public Reader read(String fileName) throws IOException {
-        // If the file didn't load, or hot-loading is off, load from APK
-        InputStream is = open(fileName);
-        return new InputStreamReader(is);
-    }
-
-    /** Read a file either from the emulator host or from the APK */
     public InputStream open(String path) throws IOException {
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+
         if (HotReloadMonitor.TryLoadFromHost) {
             try {
                 InputStream is = EmulatorHostCall.queryHostForData("assets/" + path);

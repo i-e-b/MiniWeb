@@ -63,6 +63,11 @@ public class MainActivity extends Activity {
 
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
+            // setup the web view
+            view = new WebView(this);
+            this.setContentView(view, new ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
             // remove anti-script safety settings
             view.getSettings().setJavaScriptEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -124,7 +129,7 @@ public class MainActivity extends Activity {
 
     /** Show a message as a small 'toast' alert (subtle) */
     public void showToast(String message) {
-        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_LONG).show();
+        runOnUiThread(()-> Toast.makeText(this, message, Toast.LENGTH_LONG).show());
     }
 
     private void hideTitle(){
@@ -179,27 +184,20 @@ public class MainActivity extends Activity {
      * */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
         // NOTE:
         // DO NOT add any more code to the onCreate method.
         // It is small and lightweight on purpose.
         // Do any start-up in the loadWebViewWithLocalClient() method.
 
         hasLoaded = false;
-
-        titleBar = this.getActionBar();
-
         this.setTitle("Loading..."); // temp message as soon as possible
 
-        // setup the web view
-        view = new WebView(this);
-        this.setContentView(view, new ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-
+        titleBar = this.getActionBar();
         // Do any heavy lifting out on a non-ui thread, so
         // the 'loading' message gets a chance to update
         new Thread(this::loadWebViewWithLocalClient).start();
+
+        super.onCreate(savedInstanceState);
     }
 
     @Override
@@ -207,8 +205,6 @@ public class MainActivity extends Activity {
         super.onStop();
         Log.i(TAG, "main activity is stopped");
         stopHotReloadRepeater();
-
-        if (titleBar != null) titleBar.show();
     }
 
     @Override
@@ -221,9 +217,9 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy(){
         super.onDestroy();
-        view.copyBackForwardList();
         Log.i(TAG, "main activity is destroyed");
         stopHotReloadRepeater();
+        backgroundHandler.getLooper().quit();
         ControllerBinding.ClearBindings();
     }
 
@@ -333,6 +329,7 @@ public class MainActivity extends Activity {
             int uiMode = getResources().getConfiguration().uiMode;
             return ((uiMode & UI_MODE_NIGHT_YES) > 0);
         } catch (Exception ex){
+
             return false;
         }
     }

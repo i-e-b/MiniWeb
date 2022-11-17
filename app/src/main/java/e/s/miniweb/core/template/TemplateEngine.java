@@ -7,6 +7,8 @@ import android.webkit.WebResourceRequest;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -621,27 +623,34 @@ public class TemplateEngine {
     public void copyLinesToTemplate(String fileName, TemplateResponse resp) throws IOException {
         resp.TemplateLines.clear();
 
-        Reader rdr;
+        InputStream is = null;
         try {
-            rdr = assets.read(fileName);
-        } catch (FileNotFoundException fex){
-            rdr = assets.read(fileName+".html");
-        }
-
-        // Now read file lines into the template
-        BufferedReader br = new BufferedReader(rdr);
-        String readLine;
-        try {
-            // While the BufferedReader readLine is not null
-            while ((readLine = br.readLine()) != null) {
-                resp.TemplateLines.add(readLine);
+            try {
+                is = assets.open(fileName);
+            } catch (FileNotFoundException fex) {
+                is = assets.open(fileName + ".html");
             }
 
-            // Close the InputStream and BufferedReader
-            if (rdr != null) rdr.close();
-            br.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+            Reader rdr = new InputStreamReader(is);
+            // Now read file lines into the template
+            BufferedReader br = new BufferedReader(rdr);
+            String readLine;
+            try {
+                // While the BufferedReader readLine is not null
+                while ((readLine = br.readLine()) != null) {
+                    resp.TemplateLines.add(readLine);
+                }
+
+                // Close the InputStream and BufferedReader
+                is.close();
+                rdr.close();
+                br.close();
+                is = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } finally {
+            if (is != null) is.close();
         }
     }
 

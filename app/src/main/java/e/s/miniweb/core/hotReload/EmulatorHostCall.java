@@ -1,5 +1,6 @@
 package e.s.miniweb.core.hotReload;
 
+import android.net.TrafficStats;
 import android.util.Log;
 
 import java.io.BufferedReader;
@@ -38,6 +39,9 @@ public class EmulatorHostCall {
      * @return true if host responded. False otherwise
      */
     public static boolean hostIsAvailable(){
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+
         try {
             URL url = new URL(HOST_BASE + "host");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -46,8 +50,17 @@ public class EmulatorHostCall {
                 conn.setConnectTimeout(WAKE_TIME_MS);
                 conn.setReadTimeout(WAKE_TIME_MS);
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                return Objects.equals(br.readLine(), HOST_UP_MSG);
+                InputStream is = conn.getInputStream();
+
+                InputStreamReader isr = new InputStreamReader(is);
+                BufferedReader br = new BufferedReader(isr);
+                String line = br.readLine();
+
+                is.close();
+                isr.close();
+                br.close();
+
+                return Objects.equals(line, HOST_UP_MSG);
             } finally {
                 conn.disconnect();
             }
@@ -65,6 +78,9 @@ public class EmulatorHostCall {
      * @param path path and query to send to host. Does NOT need leading '/'
      */
     public static String queryHostForString(String path){
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+
         try {
             URL url = new URL(HOST_BASE + (path.startsWith("/") ? path.substring(1) : path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -101,6 +117,9 @@ public class EmulatorHostCall {
      * @param path path and query to send to host. Does NOT need leading '/'
      */
     public static InputStream queryHostForData(String path){
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+
         try {
             // we read data to a buffer, then return a stream-reader for that,
             // so that we don't hit time-out issues.
