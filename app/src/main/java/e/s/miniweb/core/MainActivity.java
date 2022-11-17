@@ -27,15 +27,16 @@ import e.s.miniweb.core.hotReload.HotReloadMonitor;
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private WebView view;
-    private static AppWebRouter webRouter;
-    private static JsCallbackManager manager;
-    private static AssetLoader loader;
+    private AppWebRouter webRouter;
+    private JsCallbackManager manager;
+    private AssetLoader loader;
+    private ActionBar titleBar;
     private long lastPress; // controls double-back-to-exit timing
     private boolean hasLoaded = false;
 
     // Hot reload
     private static final int hotReloadInterval = 1000; // 1 second
-    private Handler hotReloadHandler;
+    private Handler backgroundHandler;
 
     /** Do start-up of the web-app
      * This is mostly hooking up the views, updating settings,
@@ -55,8 +56,8 @@ public class MainActivity extends Activity {
         if (manager == null) manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
 
         // Hot-reload loop (with self terminate if not connected)
-        if (hotReloadHandler == null) {
-            hotReloadHandler = new Handler();
+        if (backgroundHandler == null) {
+            backgroundHandler = new Handler();
             startHotReloadRepeater();
         }
 
@@ -128,9 +129,12 @@ public class MainActivity extends Activity {
 
     private void hideTitle(){
         runOnUiThread(() -> {
-            ActionBar titleBar = this.getActionBar();
-            if (titleBar != null) {
-                titleBar.hide();
+            try {
+                if (titleBar != null && titleBar.isShowing()) {
+                    titleBar.hide();
+                }
+            } catch (Exception ex){
+                Log.e(TAG, "Failed to hide title: "+ex);
             }
         });
     }
@@ -138,7 +142,6 @@ public class MainActivity extends Activity {
     private void setTitleColor(String color){
         if (color == null) return;
         try {
-            ActionBar titleBar = this.getActionBar();
             ColorDrawable colorDrawable = new ColorDrawable(Color.parseColor(color)); // css-like color, e.g. "#0F9D58"
             titleBar.setBackgroundDrawable(colorDrawable);
         } catch(Exception ex) {
@@ -149,18 +152,25 @@ public class MainActivity extends Activity {
     /** Show a message by displaying the Activity title (bold) */
     public void PopupTitle(String message, String color) {
         runOnUiThread(() -> {
-            ActionBar titleBar = this.getActionBar();
-            if (titleBar != null) {
-                setTitleColor(color);
-                titleBar.setTitle(message);
-                titleBar.show();
+            try {
+                if (titleBar != null) {
+                    setTitleColor(color);
+                    titleBar.setTitle(message);
+                    titleBar.show();
+                }
+            } catch (Exception ex){
+                Log.e(TAG, "Failed to show title: "+ex);
             }
         });
 
         // close the message after a few seconds
-        final Handler handler = new Handler(Looper.getMainLooper());
-        handler.postDelayed(this::hideTitle, 10000); // close after 10 seconds
-
+        if (backgroundHandler != null) {
+            backgroundHandler.postDelayed(this::hideTitle, 10000); // close after 10 seconds
+        } else {
+            Log.w(TAG, "backgroundHandler was unexpectedly missing");
+            final Handler handler = new Handler(Looper.getMainLooper());
+            handler.postDelayed(this::hideTitle, 10000); // close after 10 seconds
+        }
     }
 
     /**
@@ -177,6 +187,8 @@ public class MainActivity extends Activity {
         // Do any start-up in the loadWebViewWithLocalClient() method.
 
         hasLoaded = false;
+
+        titleBar = this.getActionBar();
 
         this.setTitle("Loading..."); // temp message as soon as possible
 
@@ -195,6 +207,8 @@ public class MainActivity extends Activity {
         super.onStop();
         Log.i(TAG, "main activity is stopped");
         stopHotReloadRepeater();
+
+        if (titleBar != null) titleBar.show();
     }
 
     @Override
@@ -210,6 +224,7 @@ public class MainActivity extends Activity {
         view.copyBackForwardList();
         Log.i(TAG, "main activity is destroyed");
         stopHotReloadRepeater();
+        ControllerBinding.ClearBindings();
     }
 
 
@@ -230,7 +245,7 @@ public class MainActivity extends Activity {
                 if (EmulatorHostCall.hostIsAvailable()){
                     Log.i(TAG, "Hot-reload service connected!");
                     HotReloadMonitor.TryLoadFromHost = true;
-                    hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again
+                    backgroundHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again
                 } else {
                     Log.i(TAG, "Hot-reload service not found. Deactivating");
                     HotReloadMonitor.TryLoadFromHost = false;
@@ -267,7 +282,7 @@ public class MainActivity extends Activity {
             } catch (Exception ex){
                 Log.w(TAG, "error in emulator host loop: "+ex);
             } finally {
-                hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again if awake
+                backgroundHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval); // tick again if awake
             }
         }
     };
@@ -295,12 +310,12 @@ public class MainActivity extends Activity {
     void startHotReloadRepeater() {
         Log.i(TAG, "Starting hot-reload looper");
         doFirstEmuHostCheck = true;
-        if (hotReloadHandler != null) hotReloadHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval);
+        if (backgroundHandler != null) backgroundHandler.postDelayed(HotReloadAssetChecker, hotReloadInterval);
     }
 
     void stopHotReloadRepeater() {
         HotReloadMonitor.TryLoadFromHost = false;
-        if (hotReloadHandler != null) hotReloadHandler.removeCallbacks(HotReloadAssetChecker);
+        if (backgroundHandler != null) backgroundHandler.removeCallbacks(HotReloadAssetChecker);
         Log.i(TAG, "Stopping hot-reload looper");
     }
 

@@ -16,7 +16,6 @@ public class BrowserEventListener extends WebChromeClient {
     @Override
     public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
         mainActivity.showToast(message);
-        System.out.println("alert = " + message);
         result.confirm(); // need to do this, or the page freezes
         return true; // means don't show the default alert
     }

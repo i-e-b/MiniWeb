@@ -34,6 +34,11 @@ public class ControllerBinding {
         controllers.add(o);
     }
 
+    public static void ClearBindings() {
+        responders.clear();
+        controllers.clear();
+    }
+
     public static boolean hasMethod(String compositeKey) {
         return responders.containsKey(compositeKey);
     }

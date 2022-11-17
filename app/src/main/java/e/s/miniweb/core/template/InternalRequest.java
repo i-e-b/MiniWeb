@@ -6,7 +6,7 @@ import android.webkit.WebResourceRequest;
 import java.util.Map;
 
 public class InternalRequest implements WebResourceRequest {
-    private Uri target;
+    private final Uri target;
 
     public InternalRequest(Uri target){
         this.target = target;
