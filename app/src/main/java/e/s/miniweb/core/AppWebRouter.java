@@ -26,15 +26,15 @@ public class AppWebRouter extends WebViewClient {
     private final TemplateEngine template;
     private final AssetLoader assets;
     private final MainActivity mainView;
-    private final Stack<String> historyStack;
+
+    private static final Stack<String> historyStack = new Stack<>(); // static so it survives warm reload
+
     public boolean clearHistory;
 
     public AppWebRouter(AssetLoader assets, MainActivity main){
         template = new TemplateEngine(assets, this);
         this.assets = assets;
         this.mainView = main;
-
-        historyStack = new Stack<>();
 
         // Prepare all the controllers for everything
         ControllerBindings.BindAllControllers();

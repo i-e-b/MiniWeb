@@ -48,6 +48,7 @@ public class TestController extends ControllerBase {
         ControllerBinding.BindMethod(controller, "svg-embed", this::svgEmbed);
         ControllerBinding.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
         ControllerBinding.BindMethod(controller, "increment", this::incrementPage);
+        ControllerBinding.BindMethod(controller, "memInfo", this::memInfo);
 
         // partials
         ControllerBinding.BindMethod(controller, "badge-africa", this::badgeAfrica);
@@ -100,6 +101,21 @@ public class TestController extends ControllerBase {
             public final String Name = Statics.formData.get("demoForm");
         };
         return Page("test/paramsAndForms3", model);
+    }
+
+
+    private TemplateResponse memInfo(Map<String, String> params, WebResourceRequest request) {
+        final Runtime runtime = Runtime.getRuntime();
+        final long usedMemInMB=(runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+        final long maxHeapSizeInMB=runtime.maxMemory() / 1048576L;
+        final long availHeapSizeInMB = maxHeapSizeInMB - usedMemInMB;
+
+        Object model = new Object(){
+            public final long usedMem = usedMemInMB;
+            public final long maxHeapSize = maxHeapSizeInMB;
+            public final long availHeapSize = availHeapSizeInMB;
+        };
+        return Page("test/memInfo", model);
     }
 
     private static int loadCount = 0;

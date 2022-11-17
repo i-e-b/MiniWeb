@@ -18,6 +18,7 @@ Things to do:
 - [x] Dark mode support (switchable css files & a js hook ?)
 - [x] Use the hot reload to continue view when restarted (like when changing dark mode)
 - [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
+- [x] Memory monitor
 - [ ] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
 - [ ] language switching for user-facing messages; and paths (to support localising everything)
 
