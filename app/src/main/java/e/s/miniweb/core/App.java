@@ -69,7 +69,7 @@ public class App extends Application {
             if (className.startsWith("java.lang.")) continue;
             if (className.startsWith("sun.nio.")) continue;
             if (className.startsWith("android.os.")) continue;
-            if (className.startsWith("e.s.miniweb.core.AppCore")) continue;
+            if (className.startsWith("e.s.miniweb.core.App")) continue;
 
             frameCount++;
             sb.append(e.getClassName());

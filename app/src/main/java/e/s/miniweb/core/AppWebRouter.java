@@ -201,19 +201,20 @@ public class AppWebRouter extends WebViewClient {
      */
     public String getControllerResponse(WebResourceRequest request, boolean isPartialView) throws Exception {
         String pageString;
-        String controller = request.getUrl().getHost();
-        String method = request.getUrl().getPath();
+        Uri url = request.getUrl();
+        String controller = url.getHost();
+        String method = url.getPath();
         if (method == null) method = "";
         if (method.startsWith("/")) method = method.substring(1);
         if (method.equals("")) method = "index";
-        String params = request.getUrl().getQuery();
+        String params = url.getQuery();
 
         // Check for 'expect hot reload' here
         String response = null;
         if (Objects.equals(controller, hotController) && method.equals(hotMethod) && Objects.equals(params, hotParams)) {
             // This is a hot reload. Don't actually run the template.
+            Log.i(TAG, "Hot-reloading: " + url);
             response = HotReloadMonitor.RunHotReload(template);
-            Log.i(TAG, "Doing hot-reload");
         }
 
         // Either a normal call, or hot reload failed.

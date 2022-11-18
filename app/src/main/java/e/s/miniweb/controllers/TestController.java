@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 
 import e.s.miniweb.JsCallbackManager;
-import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;

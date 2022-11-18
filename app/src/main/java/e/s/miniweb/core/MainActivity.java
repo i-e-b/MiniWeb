@@ -306,8 +306,6 @@ public class MainActivity extends Activity implements RouterControls {
 
         String url = "app://"+controller+"/"+method+ (params==null? "" : "?"+params);
 
-        Log.i(TAG, "Reloading: "+url);
-
         runOnUiThread(() -> {
             webView.loadUrl(url); // Ask the web view to request and render the current page
         });
@@ -353,5 +351,18 @@ public class MainActivity extends Activity implements RouterControls {
     public void setCurrentUrl(String url, boolean clearHistory) {
         webRouter.clearHistory = clearHistory;
         webView.loadUrl(url);
+    }
+
+    @Override
+    public boolean hotReloadCurrentPage() {
+        if (!HotReloadMonitor.CanReload()) return false;
+        doHotReload();
+        return true;
+    }
+
+    @Override
+    public void coldReloadCurrentPage() {
+        HotReloadMonitor.ClearReload();
+        webView.reload();
     }
 }

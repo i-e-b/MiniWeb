@@ -1,5 +1,7 @@
 package e.s.miniweb;
 
+import android.util.Log;
+
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.RouterControls;
 
@@ -12,6 +14,7 @@ import e.s.miniweb.core.RouterControls;
  */
 @SuppressWarnings("unused")
 public class StartupActions {
+    private static final String TAG = "StartupActions";
 
     /**
      * Do actions before the homepage is loaded.
@@ -21,8 +24,10 @@ public class StartupActions {
      */
     public static void beforeHomepage(){
 
-        // Add 'demo' permissions. Remove for your app.
-        Permissions.AddPermissions(new String[]{"perm1", "perm2"});
+        // Demo of a way to do 'late loading' of user account.
+        // Feel free to modify or remove for your app.
+        Permissions.ClearPermissions();
+        Permissions.AddPermission("no-permissions-loaded");
     }
 
     /**
@@ -32,5 +37,15 @@ public class StartupActions {
      * and will not prevent the user from interacting
      * with the app, including changing page.
      */
-    public static void afterHomepage(RouterControls controls){}
+    public static void afterHomepage(RouterControls controls){
+
+
+        // Demo of a way to do 'late loading' of user account.
+        // Feel free to modify or remove for your app.
+        Permissions.ClearPermissions();
+        Permissions.AddPermissions(new String[]{"perm1", "perm2"});
+        if (!controls.hotReloadCurrentPage()){
+            Log.w(TAG, "Failed to hot-reload");
+        }
+    }
 }

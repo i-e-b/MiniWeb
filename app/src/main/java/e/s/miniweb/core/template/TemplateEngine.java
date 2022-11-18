@@ -17,9 +17,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
@@ -104,23 +106,6 @@ public class TemplateEngine {
     //region Render core
 
     /**
-     * Render a page that causes a redirect
-     */
-    private String redirectPage(TemplateResponse tmpl) {
-        return internalTemplate("redirect.html", new RedirectModel(tmpl));
-    }
-
-    private static class RedirectModel {
-        public final String RedirectUrl;
-        public final boolean ShouldClearHistory;
-
-        public RedirectModel(TemplateResponse tmpl) {
-            RedirectUrl = tmpl.RedirectUrl;
-            ShouldClearHistory = tmpl.ShouldClearHistory;
-        }
-    }
-
-    /**
      * Replace {{name}} with tmpl.Model.name.toString()
      * For {{for:name}}...{{end:name}}
      * if tmpl.Model.name is enumerable, repeat the contained section for each item. The template {{item:childField}} becomes available.
@@ -152,7 +137,7 @@ public class TemplateEngine {
                     if (templateLinesConsumed > 0) {
                         templateLineIndex += templateLinesConsumed;
                     } else {
-                        Log.w(TAG, "Could not interpret 'for' block. Check markup and data types. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                        Log.w(TAG, "Could not interpret 'for' block. Check markup and data types." + errFileAndLine(tmpl.TemplatePath, templateLineIndex));
                         pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
                     }
                     continue;
@@ -160,11 +145,11 @@ public class TemplateEngine {
 
                 // Is it a sub-view?
                 if (!isQuoted && templateLine.contains("{{view:")) {
-                    int templateLinesConsumed = injectViewBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                    int templateLinesConsumed = recurseViewBlock(templateLineIndex, tmpl, cursorItem, pageOut);
                     if (templateLinesConsumed >= 0) { // 'view' should only be 1 line
                         templateLineIndex += templateLinesConsumed;
                     } else {
-                        Log.w(TAG, "Could not interpret 'view' block. Check markup and data types. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                        Log.w(TAG, "Could not interpret 'view' block. Check markup and data types." + errFileAndLine(tmpl.TemplatePath, templateLineIndex));
                         pageOut.append(templateLine); // write it out -- both so we can see errors, and so comments don't get broken.
                     }
                     continue;
@@ -172,13 +157,20 @@ public class TemplateEngine {
 
                 // Is it a permission block?
                 if (!isQuoted && templateLine.contains("{{needs:")) {
-                    pageOut.append("Hello. I see your permission request.");
+                    // permission control: read contents, outputting if permissions are met, then skip to end of block
+                    int templateLinesConsumed = recurseNeedsBlock(templateLineIndex, tmpl, cursorItem, pageOut);
+                    if (templateLinesConsumed > 0) {
+                        templateLineIndex += templateLinesConsumed;
+                    } else {
+                        Log.w(TAG, "Could not interpret 'needs' block. Check markup and data types." + errFileAndLine(tmpl.TemplatePath, templateLineIndex));
+                        pageOut.append("[ERROR]"); // unlike others, we HIDE failed permission blocks
+                    }
                     continue;
                 }
 
                 // Trailing 'end'?
                 if (!isQuoted && templateLine.contains("{{end:")) {
-                    Log.w(TAG, "Unexpected 'end' tag. Either bad markup, or a block was not interpreted correctly. File=" + tmpl.TemplatePath + "; Line=" + templateLineIndex);
+                    Log.w(TAG, "Unexpected 'end' tag. Either bad markup, or a block was not interpreted correctly. File=" + errFileAndLine(tmpl.TemplatePath, templateLineIndex));
                     continue;
                 }
 
@@ -201,6 +193,88 @@ public class TemplateEngine {
         return pageOut.toString();
     }
 
+    /** Handle permission-gated blocks by calling back out through the template system and injecting results into string builder.
+     * Returns number of extra lines consumed from the input template
+     * @param startIndex offset into template lines where we should start
+     * @param cursorItem 'for' loop item, if any. Otherwise null
+     * @param sb output string builder
+     * @param tmpl template being read
+     * */
+    private int recurseNeedsBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
+        String startLine = tmpl.TemplateLines.get(startIndex).trim();
+        if (!startLine.startsWith("{{") || !startLine.endsWith("}}")) { // invalid directive line
+            return -1;
+        }
+
+        String[] bits = readDirective(startLine);
+        if (bits == null) return -1; // bad '{{...:...}}' line
+        if (!Objects.equals(bits[0], "needs")) return -1; // not the start of a 'needs' block
+
+        Map<String,String> requiredPermissions = readParams(bits[1]);
+
+
+        // scan lines until we find the next *matching* '{{end:needs}}'
+        boolean found = false;
+        int nestingLevel = 0;
+        int endIndex;
+        List<String> templateLines = tmpl.TemplateLines;
+        int limit = templateLines.size();
+        for (endIndex = startIndex + 1; endIndex < limit; endIndex++) {
+            String templateLine = templateLines.get(endIndex);
+
+            String[] endBits = readDirective(templateLine);
+            if (endBits == null) continue; // bad '{{...:...}}' line
+            if (Objects.equals(endBits[0], "needs")){ // a nested block
+                nestingLevel++;
+                continue;
+            }
+            if (!Objects.equals(endBits[0], "end")) continue; // not the end of a block
+            String endType = endBits[1].trim();
+            if (!endType.startsWith("needs")) continue; // not the end of a 'needs' block
+
+            // Found an {{end:needs}}.
+            // If we're nested, reduce count and continue.
+            // Otherwise, this is our stop.
+            if (nestingLevel > 0) {
+                nestingLevel--;
+                continue;
+            }
+
+            found = true;
+            break;
+        }
+        int lineCount = endIndex - startIndex;
+        if (!found || nestingLevel < 0) {
+            Log.w(TAG, "Failed to find the end of 'needs' block."+errFileAndLine(tmpl.TemplatePath, startIndex));
+            sb.append("[ERROR]"); // could not find end point
+            return lineCount;
+        }
+
+        // If the programmer decorated the end (e.g. `{{end:needs perm1, perm2}}`)
+        // Then check it's correct and error if not
+        String endLine = templateLines.get(endIndex).trim();
+        bits = readDirective(endLine);
+        if (bits != null && !Objects.equals(bits[1], "needs")) {
+            Map<String,String> endPermissions = readParams(bits[1].substring(6));
+            if (!areSameKeys(endPermissions, requiredPermissions)){
+                Log.w(TAG, "End of 'needs' block did not match start."+errFileAndLine(tmpl.TemplatePath, endIndex));
+                sb.append("[ERROR]");
+                return lineCount;
+            }
+        }
+
+
+        // If permissions met, re-run the template and inject
+        if (Permissions.HasAnyPermissions(requiredPermissions.keySet().toArray(new String[0]))) {
+            // copy out the lines between start and end of our block
+            TemplateResponse subset = tmpl.cloneRange(startIndex + 1, endIndex - 1);
+            // recurse on the template sub-set
+            sb.append(transformTemplate(subset, cursorItem));
+        }
+
+        return lineCount;
+    }
+
     /** Handle sub-view blocks by calling back out through the template system and injecting results into string builder.
      * Returns number of extra lines consumed from the input template
      * @param startIndex offset into template lines where we should start
@@ -208,7 +282,7 @@ public class TemplateEngine {
      * @param sb output string builder
      * @param tmpl template being read
      * */
-    private int injectViewBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
+    private int recurseViewBlock(int startIndex, TemplateResponse tmpl, Object cursorItem, StringBuilder sb) {
         String startLine = tmpl.TemplateLines.get(startIndex).trim();
         if (!startLine.startsWith("{{") || !startLine.endsWith("}}")) { // invalid repeat line
             return -1;
@@ -233,7 +307,7 @@ public class TemplateEngine {
                 sb.append(response);
                 return 0;
             } catch (Exception ex) {
-                Log.w(TAG, "URL view block failed: File=" + tmpl.TemplatePath + "; Line=" + startIndex + "; Error=" + ex);
+                Log.w(TAG, "URL view block failed:" + errFileLineAndError(tmpl.TemplatePath, startIndex, ex));
                 sb.append("[ERROR]");
                 return -1;
             }
@@ -241,7 +315,7 @@ public class TemplateEngine {
 
         // exit early if there is no path
         if (!params.containsKey("path")){
-            Log.w(TAG, "Invalid view block: no url or path. Check the mark-up, and ensure ',' separators. File=" + tmpl.TemplatePath + "; Line=" + startIndex);
+            Log.w(TAG, "Invalid view block: no url or path. Check the mark-up, and ensure ',' separators." + errFileAndLine(tmpl.TemplatePath, startIndex));
             return -1;
         }
 
@@ -263,77 +337,9 @@ public class TemplateEngine {
             Log.w(TAG, "Failed to load view! TargetFile="+viewPath+"; ParentFile=" + tmpl.TemplatePath + "; Line=" + startIndex);
             return -1;
         } catch (Exception ex){
-            Log.w(TAG, "Failed to load view block: File=" + tmpl.TemplatePath + "; Line=" + startIndex + "; Error=" + ex);
+            Log.w(TAG, "Failed to load view block:" + errFileLineAndError(tmpl.TemplatePath, startIndex, ex));
             return -1;
         }
-    }
-
-    /** Try to map the fields of an object into a url by appending query parameters */
-    private Uri mapObjectToUrlQuery(Uri target, Object viewModel) {
-        Uri.Builder builder = target.buildUpon();
-        Map<String, String> modelAsMap = convertObjectToMap(viewModel);
-        for(String key: modelAsMap.keySet()) {
-            builder = builder.appendQueryParameter(key, modelAsMap.get(key));
-        }
-        target = builder.build();
-        return target;
-    }
-
-    /** extract public fields to a hash map */
-    private Map<String, String> convertObjectToMap(Object obj) {
-        Map<String, String> map = new HashMap<>();
-
-        if (obj != null) {
-            Field[] fields = obj.getClass().getFields();
-            for(Field f: fields){
-                if (f == null) continue;
-                Object fieldVal;
-                try {
-                    fieldVal = f.get(obj);
-                } catch (IllegalAccessException e) {
-                    continue;
-                }
-                if (fieldVal != null) {
-                    map.put(f.getName(), fieldVal.toString());
-                }
-            }
-        }
-
-        return map;
-    }
-
-    /** try to find an object given a `model.path.to.thing` or `item.path.to.thing` */
-    private Object getViewModelObjectByPath(int lineIdx, TemplateResponse tmpl, Object cursorItem, Map<String, String> params) {
-        if (params.containsKey("model")){
-            String modelPath = params.get("model");
-            if (modelPath == null || modelPath.equals("")) {
-                Log.w(TAG, "invalid view block: empty model. File=" + tmpl.TemplatePath + "; Line=" + lineIdx);
-                return null;
-            } else if (modelPath.startsWith("model")) { // looks like a page model reference
-                if (modelPath.equals("model")){ // view should get the whole model
-                    return tmpl.Model;
-                } else { // need to find by path
-                    return findFieldObject(tmpl.Model, stripFirstDotItem(modelPath));
-                }
-            } else if (modelPath.startsWith("item")){ // looks like a 'for' block item reference
-                if (modelPath.equals("item")){ // view should get the whole iterated item
-                    return cursorItem;
-                } else { // need to find by path
-                    return findFieldObject(cursorItem, stripFirstDotItem(modelPath));
-                }
-            } else { // assume page model reference
-                return findFieldObject(tmpl.Model, modelPath);
-            }
-        }
-        return null;
-    }
-
-    /** Remove start of string up to and including the first '.' */
-    private String stripFirstDotItem(String path) {
-        int index = path.indexOf('.');
-        if (index < 0) return "";
-        if (index+1 >= path.length()) return "";
-        return path.substring(index+1);
     }
 
     /**
@@ -407,13 +413,114 @@ public class TemplateEngine {
         return lineCount;
     }
 
+    private String errFileAndLine(String file, int lineIdx){
+        return "; File=" + file + "; Line=" + (lineIdx + 1);
+    }
+
+    private String errFileLineAndError(String file, int lineIdx, Exception ex){
+        return "; File=" + file + "; Line=" + (lineIdx + 1) + "; Error="+ex;
+    }
+
+    private boolean areSameKeys(Map<String, String> endPermissions, Map<String, String> requiredPermissions) {
+        Set<String> left = endPermissions.keySet();
+        Set<String> right = requiredPermissions.keySet();
+
+        return left.equals(right);
+    }
+
+    /**
+     * Render a page that causes a redirect
+     */
+    private String redirectPage(TemplateResponse tmpl) {
+        return internalTemplate("redirect.html", new RedirectModel(tmpl));
+    }
+
+    private static class RedirectModel {
+        public final String RedirectUrl;
+        public final boolean ShouldClearHistory;
+
+        public RedirectModel(TemplateResponse tmpl) {
+            RedirectUrl = tmpl.RedirectUrl;
+            ShouldClearHistory = tmpl.ShouldClearHistory;
+        }
+    }
+
+    /** Try to map the fields of an object into a url by appending query parameters */
+    private Uri mapObjectToUrlQuery(Uri target, Object viewModel) {
+        Uri.Builder builder = target.buildUpon();
+        Map<String, String> modelAsMap = convertObjectToMap(viewModel);
+        for(String key: modelAsMap.keySet()) {
+            builder = builder.appendQueryParameter(key, modelAsMap.get(key));
+        }
+        target = builder.build();
+        return target;
+    }
+
+    /** extract public fields to a hash map */
+    private Map<String, String> convertObjectToMap(Object obj) {
+        Map<String, String> map = new HashMap<>();
+
+        if (obj != null) {
+            Field[] fields = obj.getClass().getFields();
+            for(Field f: fields){
+                if (f == null) continue;
+                Object fieldVal;
+                try {
+                    fieldVal = f.get(obj);
+                } catch (IllegalAccessException e) {
+                    continue;
+                }
+                if (fieldVal != null) {
+                    map.put(f.getName(), fieldVal.toString());
+                }
+            }
+        }
+
+        return map;
+    }
+
+    /** try to find an object given a `model.path.to.thing` or `item.path.to.thing` */
+    private Object getViewModelObjectByPath(int lineIdx, TemplateResponse tmpl, Object cursorItem, Map<String, String> params) {
+        if (params.containsKey("model")){
+            String modelPath = params.get("model");
+            if (modelPath == null || modelPath.equals("")) {
+                Log.w(TAG, "invalid view block: empty model." + errFileAndLine(tmpl.TemplatePath, lineIdx));
+                return null;
+            } else if (modelPath.startsWith("model")) { // looks like a page model reference
+                if (modelPath.equals("model")){ // view should get the whole model
+                    return tmpl.Model;
+                } else { // need to find by path
+                    return findFieldObject(tmpl.Model, stripFirstDotItem(modelPath));
+                }
+            } else if (modelPath.startsWith("item")){ // looks like a 'for' block item reference
+                if (modelPath.equals("item")){ // view should get the whole iterated item
+                    return cursorItem;
+                } else { // need to find by path
+                    return findFieldObject(cursorItem, stripFirstDotItem(modelPath));
+                }
+            } else { // assume page model reference
+                return findFieldObject(tmpl.Model, modelPath);
+            }
+        }
+        return null;
+    }
+
+    /** Remove start of string up to and including the first '.' */
+    private String stripFirstDotItem(String path) {
+        int index = path.indexOf('.');
+        if (index < 0) return "";
+        if (index+1 >= path.length()) return "";
+        return path.substring(index+1);
+    }
+
     /**
      * break a directive line into parts. Always returns 2 elements or null.
      */
     private String[] readDirective(String line) {
         try {
             line = line.trim();
-            if (line.length() < 4) return null;
+            if (line.length() < 4) return null; // too short to be valid
+            if (!line.startsWith("{{") || !line.endsWith("}}")) return null; // not a directive line
             line = line.substring(2, line.length() - 2);
             String[] bits = line.split(":", 2);
             if (bits.length != 2) { // bad format
