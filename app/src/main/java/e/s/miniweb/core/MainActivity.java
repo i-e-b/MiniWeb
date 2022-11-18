@@ -237,7 +237,7 @@ public class MainActivity extends Activity implements RouterControls {
     /** Background task that checks for changes to assets used by the current page
      * DO NOT call this directly. Use `hotReloadHandler.post(HotReloadAssetChecker);`
      * to run in the correct thread. */
-    Runnable HotReloadAssetChecker = new Runnable() {
+    private final Runnable HotReloadAssetChecker = new Runnable() {
 
         @Override
         public void run() { // this should always run on our background thread.

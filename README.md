@@ -17,7 +17,7 @@ Things to do:
 - [x] Add partial views, including by taking a model sub-item
 - [x] Dark mode support (switchable css files & a js hook ?)
 - [x] Use the hot reload to continue view when restarted (like when changing dark mode)
-- [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
+- [x] Global permissions object, with toggle flags in templates (also maybe in controllers)
 - [x] Memory monitor
 - [ ] "Else" options for `{{for:...}}` and `{{needs:...}}` blocks
 - [ ] Try to reduce complexity of template engine if possible

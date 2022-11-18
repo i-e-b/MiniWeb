@@ -35,7 +35,7 @@ public class ExamplesController extends ControllerBase {
 
     // this controller-action will only run if the user has at least one of these permissions:
     private TemplateResponse notPermitted(Map<String, String> params, WebResourceRequest request) {
-        return null;
+        return Page("examples/permitted-ok", null);
     }
 
     private TemplateResponse urlPartialElementView(Map<String, String> params, WebResourceRequest request) {

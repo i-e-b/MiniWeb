@@ -27,7 +27,7 @@ public class JsCallbackManager extends CoreJsManager {
 
 
     /** supports the 'storeForm' method. Feel free to remove for your app */
-    public static Map<String, String> formData = new HashMap<>();
+    public static final Map<String, String> formData = new HashMap<>();
 
     /**
      * Example for extracting data from forms via JavaScript.

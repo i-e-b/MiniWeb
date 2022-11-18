@@ -9,6 +9,7 @@ import android.util.Log;
 
 import e.s.miniweb.BuildConfig;
 
+@SuppressWarnings("ALL")
 public class App extends Application {
     private static final String TAG = "AppCore";
     private static Resources resources;
