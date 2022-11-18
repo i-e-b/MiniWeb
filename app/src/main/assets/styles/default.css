@@ -85,6 +85,13 @@ input[type=text]:focus {
     margin-bottom:13px;
 }
 
+.light-bg-txt{
+    color: #000;
+}
+.dark-bg-txt{
+    color: #fff;
+}
+
 /* SVG background for a demo */
 
 .globe-bg{
