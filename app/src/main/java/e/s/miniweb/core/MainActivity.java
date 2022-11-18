@@ -20,17 +20,18 @@ import android.widget.Toast;
 import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
+import e.s.miniweb.StartupActions;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
-public class MainActivity extends Activity {
+public class MainActivity extends Activity implements RouterControls {
     private static final String TAG = "MainActivity";
-    private WebView view;
+    private WebView webView;
     private AppWebRouter webRouter;
     private JsCallbackManager manager;
     private AssetLoader loader;
-    private long lastPress; // controls double-back-to-exit timing
+    private long lastPress; // controls double-tap-back-to-exit timing
     private boolean hasLoaded = false;
 
     // Hot reload
@@ -47,7 +48,8 @@ public class MainActivity extends Activity {
 
         // This can be called in two situations:
         // 1. The app is doing a fresh start. Everything will be null
-        // 2. The app is doing a warm start. Lots of our objects will already exist
+        // 2. The app is doing a warm start. All our `static` objects will already exist
+        boolean isWarmReload = HotReloadMonitor.CanReload();
 
         // hook the view to the app client and request the home page
         if (loader == null) loader = new AssetLoader(getAssets());
@@ -60,27 +62,29 @@ public class MainActivity extends Activity {
             startHotReloadRepeater();
         }
 
+        if (!isWarmReload) StartupActions.beforeHomepage();
+
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
             // setup the web view
-            view = new WebView(this);
-            this.setContentView(view, new ViewGroup.LayoutParams(
+            webView = new WebView(this);
+            this.setContentView(webView, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
             // remove anti-script safety settings
-            view.getSettings().setJavaScriptEnabled(true);
+            webView.getSettings().setJavaScriptEnabled(true);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                view.getSettings().setSafeBrowsingEnabled(false);
+                webView.getSettings().setSafeBrowsingEnabled(false);
             }
-            view.getSettings().setBlockNetworkLoads(false);
+            webView.getSettings().setBlockNetworkLoads(false);
 
             // bind handlers
-            view.setWebChromeClient(new BrowserEventListener(this));
-            view.setWebViewClient(webRouter);
-            view.addJavascriptInterface(manager, "manager");
+            webView.setWebChromeClient(new BrowserEventListener(this));
+            webView.setWebViewClient(webRouter);
+            webView.addJavascriptInterface(manager, "manager");
 
             // Turn off caching
-            view.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
+            webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
 
             // this is either the first start since the app launched,
             // OR we have been restarted due to a system event
@@ -91,10 +95,13 @@ public class MainActivity extends Activity {
                 doHotReload();
                 hideTitle();
             } else { // fresh start. Go to home page.
-                view.loadUrl("app://home");
+                webView.loadUrl("app://home");
             }
         });
-        Looper.loop();
+
+        if (!isWarmReload) StartupActions.afterHomepage(this);
+
+        Looper.loop(); // leave this thread running to do background jobs.
     }
 
     /** Handle back button.
@@ -104,7 +111,7 @@ public class MainActivity extends Activity {
     @Override
     public void onBackPressed() {
         // try to go back a page
-        if (!webRouter.goBack(view)) {
+        if (!webRouter.goBack(webView)) {
             // nothing to go back to. Maybe exit app?
             long pressTime = System.currentTimeMillis();
 
@@ -220,7 +227,7 @@ public class MainActivity extends Activity {
         super.onDestroy();
         Log.i(TAG, "main activity is destroyed");
         stopHotReloadRepeater();
-        backgroundHandler.getLooper().quit();
+        backgroundHandler.getLooper().quit(); // allow the background thread to stop.
         ControllerBinding.ClearBindings();
     }
 
@@ -302,7 +309,7 @@ public class MainActivity extends Activity {
         Log.i(TAG, "Reloading: "+url);
 
         runOnUiThread(() -> {
-            view.loadUrl(url); // Ask the web view to request and render the current page
+            webView.loadUrl(url); // Ask the web view to request and render the current page
         });
     }
 
@@ -335,5 +342,16 @@ public class MainActivity extends Activity {
 
             return false;
         }
+    }
+
+    @Override
+    public String getCurrentUrl() {
+        return webRouter.getCurrentPage();
+    }
+
+    @Override
+    public void setCurrentUrl(String url, boolean clearHistory) {
+        webRouter.clearHistory = clearHistory;
+        webView.loadUrl(url);
     }
 }

@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
+import e.s.miniweb.JsCallbackManager;
 import e.s.miniweb.Statics;
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
@@ -98,7 +99,7 @@ public class TestController extends ControllerBase {
     // this one gets the data from JavaScript
     private TemplateResponse paramsAndForms4(Map<String, String> parameters, WebResourceRequest request) {
         Object model = new Object(){
-            public final String Name = Statics.formData.get("demoForm");
+            public final String Name = JsCallbackManager.formData.get("demoForm");
         };
         return Page("test/paramsAndForms3", model);
     }

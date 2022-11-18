@@ -122,6 +122,10 @@ public class AppWebRouter extends WebViewClient {
         return true;
     }
 
+    public String getCurrentPage() {
+        return historyStack.peek();
+    }
+
     @Override
     public void onSafeBrowsingHit(WebView view, WebResourceRequest request, int threatType, SafeBrowsingResponse callback) {
         Log.i(TAG, "WebView tagged resource as a threat. Ignoring.");
@@ -281,7 +285,7 @@ public class AppWebRouter extends WebViewClient {
         if (path.endsWith(".webp")) return "image/webp";
         if (path.endsWith(".jpg")) return "image/jpeg";
         if (path.endsWith(".jpeg")) return "image/jpeg";
-        if (path.endsWith(".gif")) return "image/gif"; // pronounced "hiff"
+        if (path.endsWith(".gif")) return "image/gif";
 
         return "application/octet-stream";
     }

@@ -19,6 +19,8 @@ Things to do:
 - [x] Use the hot reload to continue view when restarted (like when changing dark mode)
 - [ ] Global permissions object, with toggle flags in templates (also maybe in controllers)
 - [x] Memory monitor
+- [ ] "Else" options for `{{for:...}}` and `{{needs:...}}` blocks
+- [ ] Try to reduce complexity of template engine if possible
 - [ ] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
 - [ ] language switching for user-facing messages; and paths (to support localising everything)
 

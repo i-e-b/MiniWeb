@@ -13,7 +13,7 @@ import e.s.miniweb.core.template.TemplateResponse;
 public class HotReloadMonitor {
     private static final String TAG = "HotReloadMonitor";
 
-    // path -> template response
+    // These must all be static to enable warm-reload
     private static final Map<String, TemplateResponse> hotReloadAssets = new HashMap<>();
     public static TemplateResponse lastPageRendered = null;
     public static boolean TryLoadFromHost = false; // part of the hot-load system.
@@ -104,5 +104,4 @@ public class HotReloadMonitor {
         }
     }
     //endregion
-
 }
