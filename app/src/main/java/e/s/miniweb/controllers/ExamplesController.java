@@ -21,10 +21,21 @@ public class ExamplesController extends ControllerBase {
         ControllerBinding.BindMethod(controller, "model-paths", this::modelPaths);
         ControllerBinding.BindMethod(controller, "partial-views", this::partialViews);
         ControllerBinding.BindMethod(controller, "permission-visibility", this::permissionVisibility);
+        ControllerBinding.BindMethod(controller, "not-permitted", this::notPermitted, "not-a-real-permission,also-not-real");
+        ControllerBinding.BindMethod(controller, "is-permitted", this::isPermitted, "perm1, perm2");
 
         // partials
         ControllerBinding.BindMethod(controller, "url-view", this::urlPartialView);
         ControllerBinding.BindMethod(controller, "element-view", this::urlPartialElementView);
+    }
+
+    private TemplateResponse isPermitted(Map<String, String> params, WebResourceRequest request) {
+        return Page("examples/permitted-ok", null);
+    }
+
+    // this controller-action will only run if the user has at least one of these permissions:
+    private TemplateResponse notPermitted(Map<String, String> params, WebResourceRequest request) {
+        return null;
     }
 
     private TemplateResponse urlPartialElementView(Map<String, String> params, WebResourceRequest request) {

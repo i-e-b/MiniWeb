@@ -20,10 +20,8 @@ import java.util.Objects;
 import java.util.Set;
 
 import e.s.miniweb.core.AppWebRouter;
-import e.s.miniweb.core.ControllerBinding;
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
-import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
 public class TemplateEngine {
     private static final String TAG = "TemplateEngine";
@@ -41,41 +39,20 @@ public class TemplateEngine {
      * Call out to the controller, get a template and model object.
      * Fill out template, then return the resulting document as a string.
      */
-    public String Run(String controller, String method, String params, WebResourceRequest request, boolean isPartialView) throws Exception {
-        String composite = controller + "|=" + method;
-
-        if (!ControllerBinding.hasMethod(composite)) {
-            System.out.println("Unknown web method!");
-            return null;
-        }
-
-        WebMethod wm = ControllerBinding.getMethod(composite);
-        if (wm == null) {
-            System.out.println("Invalid web method!");
-            return null;
-        }
-
+    public TemplateResponse Run(WebMethod controllerAction, String params, WebResourceRequest request) throws Exception {
         // 'Do' the page action.
         // This results in a template and the data to go with it
-        TemplateResponse tmpl = getDocTemplate(request, params, wm);
+        TemplateResponse tmpl = getDocTemplate(request, params, controllerAction);
 
         if (tmpl.RedirectUrl != null) {
-            return redirectPage(tmpl);
-        }
-
-        // ready to render the final page.
-        // if we wanted to 'refresh', then `tmpl` is what we'd need
-
-        HotReloadMonitor.AddHotReloadPage(tmpl);
-        if (!isPartialView) {
-            HotReloadMonitor.lastPageRendered = tmpl;
-            HotReloadMonitor.lastPageRendered.Controller = controller;
-            HotReloadMonitor.lastPageRendered.Method = method;
-            HotReloadMonitor.lastPageRendered.Params = params;
+            tmpl.ResponseBody = redirectPage(tmpl);
+            tmpl.RedirectUrl = null;
+            return tmpl;
         }
 
         // do the render!
-        return transformTemplate(tmpl, null);
+        tmpl.ResponseBody = transformTemplate(tmpl, null);
+        return tmpl;
     }
 
     /**
@@ -713,8 +690,11 @@ public class TemplateEngine {
     /**
      * Generate and populate a TemplateResponse for the given web request
      */
-    private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod wm) throws Exception {
-        TemplateResponse resp = wm.generate(mapParams(params), request);
+    private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod controllerMethod) throws Exception {
+
+        // This is the call to the controller method:
+        TemplateResponse resp = controllerMethod.RunControllerMethod(mapParams(params), request);
+
         if (resp == null) throw new Exception("Method gave a bad result");
         if (resp.RedirectUrl != null) return resp;
 

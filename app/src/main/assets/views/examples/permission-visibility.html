@@ -21,9 +21,11 @@
     {{end:needs}}
     while exposing others to any user.
 
-    The items gated by a permission
+    The items gated by a permission can be
     {{needs: perm1, perm2}}
-        Can be <a href="app://home" class="small-link">links</a> and other HTML,
+
+        <a href="app://home" class="small-link">links</a> and other HTML,
+
         {{needs: perm1}}
             <br/>Or partial views:
             {{view: url=app://examples/url-view?text=You%20have%20permission%20one}}
@@ -39,8 +41,8 @@
     {{needs: not-a-real-permission}}
         <b>################# WAGGA! GABBA! BOGGO! Ha-ha, you can't see me! #################</b>
     {{end:needs}}
-    the HTML is continued without the gated content, and without inserting any other mark-up;
-    so be sure to check you view <b>with and without</b> each set of permissions.
+    the HTML is continued <i>without</i> the gated content, and without inserting any other mark-up;
+    so be sure to check your page <b>with and without</b> each set of permissions.
     <!--
 
     Plans:
@@ -62,12 +64,20 @@
     they shouldn't have access to -- if the controller is gated, the link won't work.
 </p>
 <p>
-    <a href="app://examples/not-permitted">Press here</a> (nothing should happen)
+    Not permitted: <a href="app://examples/not-permitted">Press here</a> - You should see an error screen
+</p>
+<p>
+    <!-- This is "the right way" to do a restricted link -->
+    {{needs: perm1, perm2}}
+    Permitted: <a href="app://examples/is-permitted">Press here</a> - You should see the page
+    {{end:needs}}
 </p>
 <p>
     It's a good idea to use both <code>{​{needs:...}​}</code> blocks and <code>???</code>
     restrictions together.
 </p>
+
+
 
 <h2>Error handling and invalid uses</h2>
 <p>DO NOT DO ANY OF THESE, even if they seem to work</p>

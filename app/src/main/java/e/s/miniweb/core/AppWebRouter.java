@@ -19,6 +19,8 @@ import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 import e.s.miniweb.core.template.TemplateEngine;
+import e.s.miniweb.core.template.TemplateResponse;
+import e.s.miniweb.core.template.WebMethod;
 
 public class AppWebRouter extends WebViewClient {
     private static final String TAG = "AppWebRouter";
@@ -220,7 +222,7 @@ public class AppWebRouter extends WebViewClient {
         // Either a normal call, or hot reload failed.
         if (response == null) {
             // Call the controller for a page render
-            response = template.Run(controller, method, params, request, isPartialView);
+            response = runTemplate(controller, method, params, request, isPartialView);
         }
 
         if (!isPartialView) ClearHotLoad();
@@ -237,6 +239,51 @@ public class AppWebRouter extends WebViewClient {
         }
 
         return pageString;
+    }
+
+    /** This is where we call down to TemplateEngine for cold-calls */
+    private String runTemplate(String controller, String method, String params, WebResourceRequest request, boolean isPartialView) throws Exception {
+        String key = ControllerBinding.makeKey(controller, method);
+
+        // Check the url is valid
+        if (!ControllerBinding.hasMethod(key)) {
+            HotReloadMonitor.ClearReload();
+            Log.e(TAG, "Unknown web method! Controller="+controller+"; Method="+method);
+            return null;
+        }
+
+        // Check permissions
+        if (!ControllerBinding.isPermitted(key)) {
+            // permissions check failed. Bail out with an error
+            HotReloadMonitor.ClearReload();
+            Log.e(TAG, "Permission check failed! Controller="+controller+"; Method="+method);
+            return template.internalTemplate("not-permitted", null);
+        }
+
+        WebMethod controllerAction = ControllerBinding.getMethod(key);
+
+        if (controllerAction == null) {
+            Log.e(TAG, "Invalid web method -- no 'WebMethod' bound! Controller="+controller+"; Method="+method);
+            return null;
+        }
+
+        // We have enough permission. Run the method and fill in the template
+        TemplateResponse tmpl = template.Run(controllerAction, params, request);
+
+        // extract response
+        String finalOutput = tmpl.ResponseBody;
+        tmpl.ResponseBody = null;
+
+        // save hot-reload data
+        HotReloadMonitor.AddHotReloadPage(tmpl);
+        if (!isPartialView) {
+            HotReloadMonitor.lastPageRendered = tmpl;
+            HotReloadMonitor.lastPageRendered.Controller = controller;
+            HotReloadMonitor.lastPageRendered.Method = method;
+            HotReloadMonitor.lastPageRendered.Params = params;
+        }
+
+        return finalOutput;
     }
 
     private String wrapPageStringWithHtmlHeaders(String response) {
@@ -270,7 +317,7 @@ public class AppWebRouter extends WebViewClient {
         try {
             return assets.open(path);
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            Log.e(TAG, "Failed to load asset '"+path+"'; Error="+ex);
             return null;
         }
     }
