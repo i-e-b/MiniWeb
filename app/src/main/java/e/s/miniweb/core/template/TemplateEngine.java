@@ -4,11 +4,7 @@ import android.net.Uri;
 import android.util.Log;
 import android.webkit.WebResourceRequest;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,9 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
@@ -101,7 +94,10 @@ public class TemplateEngine {
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
         StringBuilder pageOut = new StringBuilder();
 
-        experimentalDomParser(tmpl);
+        StringBuilder test = new StringBuilder();
+        for (String s: tmpl.TemplateLines){test.append(s);}
+        HNode node = HNode.parse(test.toString());
+        Log.i(TAG, node.toString());
 
         List<String> templateLines = tmpl.TemplateLines;
         for (int templateLineIndex = 0, templateLinesSize = templateLines.size(); templateLineIndex < templateLinesSize; templateLineIndex++) {
@@ -179,63 +175,6 @@ public class TemplateEngine {
         return pageOut.toString();
     }
 
-    // IEB: Testing some stuff
-    private void experimentalDomParser(TemplateResponse tmpl) {
-        StringBuilder sb = new StringBuilder();
-        boolean addRoot = !tmpl.TemplateLines.get(0).startsWith("<!");
-        if (addRoot) sb.append("<ROOT>");
-        for (String line : tmpl.TemplateLines) {
-            sb.append(fixEntities(line));
-        }
-        if (addRoot) sb.append("</ROOT>");
-
-        try {
-            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-            builderFactory.setValidating(false);
-            builderFactory.setIgnoringComments(true);
-            builderFactory.setExpandEntityReferences(false);
-            DocumentBuilder docBuilder = builderFactory.newDocumentBuilder();
-            InputStream is = new ByteArrayInputStream(sb.toString().getBytes());
-            Document doc = docBuilder.parse(is);
-
-            is.close();
-            Element e = doc.getDocumentElement();
-            Log.i(TAG, "First node is? " + e.getTagName());
-        } catch (Exception ex) {
-            Log.e(TAG, ex.toString());
-        }
-    }
-
-    /** handle floating `&amp;`, turning them into `&amp;amp;` */
-    private String fixEntities(String line) {
-        if (!line.contains("&")) return line;
-
-        // this line has '&' in it, we need to check for issues
-        StringBuilder sb = new StringBuilder();
-        int left = 0;
-        while (left < line.length()) {
-            // find next '&'
-            int right = line.indexOf('&', left);
-            if (right < left) { // not found, end of line
-                sb.append(line.substring(left)); // add remaining text
-                break;
-            }
-
-            if (right > left) sb.append(line.substring(left, right)); // add text up to and including the '&'
-
-            // find the ';' after it
-            int term = line.indexOf(';', right+1);
-            int nextAmp = line.indexOf('&', right+1);
-            if (term < 0 || term > nextAmp) { // not terminated, will upset the parser.
-                sb.append("&amp;");
-                left = right + 1;
-            } else { // terminated correctly. Add and keep going
-                sb.append(line.substring(right, term));
-                left = term;
-            }
-        }
-        return sb.toString();
-    }
 
     /**
      * Handle permission-gated blocks by calling back out through the template system and injecting results into string builder.

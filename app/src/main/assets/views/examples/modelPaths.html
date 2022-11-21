@@ -96,7 +96,11 @@
     the contents of the 'else' section will show.
 </p>
 <ol>
-    <_for></_for>
+    <_>field</_> <!-- model.field -->
+    <_for emptyList>
+        <li><_item/></li> <!-- the repeater item itself -->
+        <li><_item>field</_item></li> <!-- for->item.field -->
+    </_for>
     {{for:emptyList}}
         <li>{{item:}}</li>
     {{else}}
