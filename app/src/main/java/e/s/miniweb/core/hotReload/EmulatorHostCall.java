@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Objects;
@@ -154,6 +155,43 @@ public class EmulatorHostCall {
         } catch (Exception e){
             Log.i(TAG, "failure in query host (data). Probably not connected.");
             return null;
+        }
+    }
+
+    /** Push last rendered page back to the emulator host */
+    public static void pushLastPage(String doc) {
+        if (!HotReloadMonitor.TryLoadFromHost) return;
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+        final String charset = "UTF-8";
+
+        try {
+            URL url = new URL(HOST_BASE + "push");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            try {
+                conn.setConnectTimeout(CONNECT_TIME_MS); // short connection time-out
+                conn.setReadTimeout(READ_TIME_MS);
+                conn.setDoOutput(true);
+
+                OutputStream output = conn.getOutputStream();
+                output.write(doc.getBytes(charset));
+                output.close();
+
+                InputStream is = conn.getInputStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+                // While the BufferedReader readLine is not null
+                //noinspection StatementWithEmptyBody
+                while (br.readLine() != null) {
+                }
+
+                is.close();
+                br.close();
+            } finally {
+                conn.disconnect();
+            }
+        } catch (Exception e){
+            Log.i(TAG, "Failed to send page to host. Probably not connected.");
         }
     }
 }

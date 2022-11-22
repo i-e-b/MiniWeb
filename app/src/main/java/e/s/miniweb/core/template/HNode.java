@@ -10,37 +10,51 @@ import java.util.List;
  * The tree we output is just a set of ranges over the original string.
  * */
 public class HNode {
-    public static final int TYPE_ROOT = 0; // the entire document
-    public static final int TYPE_TEXT = 1; // doesn't look like mark-up
-    public static final int TYPE_NODE = 2; // looks like <elem attr>...</elem>
-    public static final int TYPE_ELEM = 3; // looks like <elem attr/>
-    public static final int TYPE_DIRK = 4; // looks like <!directive...>
-    public static final int TYPE_COME = 5; // looks like <!-- ... ---> or <script>...</script>
+    /** The entire document */
+    public static final int TYPE_ROOT = 0;
+    /** Text or raw data. Doesn't look like mark-up */
+    public static final int TYPE_TEXT = 1;
+    /** Normal element. Looks like &lt;elem attr>...&lt;/elem> */
+    public static final int TYPE_NODE = 2;
+    /** Self-closed element. Looks like &lt;elem attr/> */
+    public static final int TYPE_ELEM = 3;
+    /** Self-enclosed directive. Looks like &lt;!directive...>*/
+    public static final int TYPE_DIRK = 4;
+    /** "Comment" or script. Looks like &lt;!-- ... ---> or &lt;script>...&lt;/script>*/
+    public static final int TYPE_SKIT = 5;
 
     /** Child nodes. Can be empty, never null */
     public final List<HNode> children = new ArrayList<>();
+
     /** parent node. Can be null */
     public final HNode parent;
 
-    private final String Src; // reference to the original
+    /** Reference to original input string */
+    private final String Src;
 
+    /** Parser type of this node */
     public int type;
-    public int srcStart, srcEnd; // total span of this node, including children (like outerHTML())
-    public int contStart, contEnd; // internal span of this node (like innerHTML())
 
+    /** start of outer HTML (total span of this node, including children) */
+    public int srcStart;
+    /** end of outer HTML (total span of this node, including children) */
+    public int srcEnd;
 
-    private static final int NOT_FOUND = -1;
+    /** start of inner HTML (internal span of this node, including children) */
+    public int contStart;
+    /** end of inner HTML (internal span of this node, including children) */
+    public int contEnd;
 
-    public HNode(HNode parent, String src){
-        this.parent=parent;
-        Src = src;
+    /** Render the node tree out to a string */
+    public void serialise(StringBuilder output) {
+        if (type == TYPE_ROOT){
+            for (HNode node: children) serialiseRecursive(node, output);
+        } else {
+            serialiseRecursive(this, output);
+        }
     }
 
-    protected HNode(HNode parent, int srcStart, int contStart, int contEnd, int srcEnd, int type){
-        this.parent = parent;Src = parent.Src;this.type = type;
-        this.srcStart = srcStart;this.contStart = contStart;this.contEnd = contEnd;this.srcEnd = srcEnd;
-    }
-
+    /** Parse a HTML fragment to a node tree */
     public static HNode parse(String src) {
         HNode base = new HNode(null, src);
 
@@ -52,29 +66,71 @@ public class HNode {
         return base;
     }
 
+    @SuppressWarnings("NullableProblems")
+    @Override
+    public String toString(){ // human readable, for diagnostics
+        try {
+            String typeStr = "?";
+            switch (type){
+                case TYPE_NODE:typeStr="node";break;
+                case TYPE_ELEM:typeStr="elem";break;
+                case TYPE_SKIT:typeStr="raw";break;
+                case TYPE_DIRK:typeStr="directive";break;
+                case TYPE_ROOT:typeStr="root";break;
+                case TYPE_TEXT:typeStr="text";break;
+            }
+            if (children.isEmpty()) {
+                int end = contEnd + 1;
+                if (end > Src.length()) end--;
+                if (srcStart == contStart) return typeStr+", text: " + Src.substring(contStart, end);
+                return typeStr+", "+Src.substring(srcStart, contStart)+" => '"+Src.substring(contStart, end)+"'"; // just the opening tag
+            } else {
+                return typeStr+", "+Src.substring(srcStart, contStart)+"; contains " + children.size();
+            }
+        } catch (Exception ex){
+            return "fail: "+srcStart+".."+srcEnd;
+        }
+    }
+
+    //region internals
+
+
+    /** String.indexOf() value for not found */
+    private static final int NOT_FOUND = -1;
+
+    private static void serialiseRecursive(HNode node, StringBuilder output) {
+        // Content or recursion?
+        if (node.children.size() < 1) {
+            // not a container. Slap in contents
+            output.append(node.Src, node.srcStart, node.srcEnd + 1);
+        } else {
+            // Opening tag?
+            if (node.srcStart < node.contStart) {
+                output.append(node.Src, node.srcStart, node.contStart);
+            }
+
+            // Recurse each child
+            for (HNode child : node.children) serialiseRecursive(child, output);
+
+            // Closing tag
+            if (node.contEnd < node.srcEnd) {
+                output.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
+            }
+        }
+    }
+
+    protected HNode(HNode parent, String src){
+        this.parent=parent;
+        Src = src;
+    }
+    protected HNode(HNode parent, int srcStart, int contStart, int contEnd, int srcEnd, int type){
+        this.parent = parent;Src = parent.Src;this.type = type;
+        this.srcStart = srcStart;this.contStart = contStart;this.contEnd = contEnd;this.srcEnd = srcEnd;
+    }
+
     /** recurse, return the offset we ended */
     @SuppressWarnings("UnnecessaryContinue")
     private static int parseRecursive(HNode target, String src, int offset){
-        /*
-        Plan
-
-        0. We just want to separate tags from text
-
-        1. Keep whitespace, attach it wherever
-        2. <script> tags are treated as if they had CDATA tags
-        3. entities are ignored (treated as text)
-        6. should keep the difference between <x></x> and <x/>
-         */
-
-        /*
-        for each level of recursion, there is a repetition of nodes,
-        each of which could be one of:
-        * Text block
-        * Child tag
-        * Closing tag (ends this recursion)
-
-         */
-
         int lastIndex = src.length()-1;
         int left = offset;
         target.contStart = offset;
@@ -107,15 +163,19 @@ public class HNode {
                     HNode.textChild(target, left, lastIndex);
                     return lastIndex + 1; // return because it's broken.
                 }
-
                 if (src.charAt(leftAngle+1) == '/') { //   </...
+                    // If there is any content up to this point, add it as a 'text' child
+                    if (leftAngle-1 > left){
+                        HNode.textChild(target, left, leftAngle - 1);
+                    }
+
                     // end of our own tag
                     target.srcEnd = rightAngle;
                     target.contEnd = leftAngle - 1;
                     if (target.contEnd == 0){
                         target.contEnd = -1;
                     }
-                    // TODO: unwind until we get to a matching tag
+                    // TODO: unwind until we get to a matching tag, to handle bad markup.
                     return rightAngle + 1; // return because it's the end of this tag.
                 } else if (src.charAt(leftAngle+1) == '!') { // <!...
                     if (more > 2 && src.charAt(leftAngle+2) == '-' && src.charAt(leftAngle+3) == '-') {
@@ -142,6 +202,13 @@ public class HNode {
                         continue;
                     } else {
                         // This looks like a real node. Recurse
+
+                        // If there is any content up to this point, add it as a 'text' child
+                        if (leftAngle-1 > left){
+                            HNode.textChild(target, left, leftAngle - 1);
+                        }
+
+                        // Start the child node and recurse it
                         HNode node = new HNode(target, target.Src);
                         node.type = TYPE_NODE;
                         node.srcStart = leftAngle;
@@ -158,26 +225,24 @@ public class HNode {
     }
 
     private static boolean isScript(HNode target, int offset) {
-        final String script = "script";
-        int len = script.length();
-        int end = target.Src.length() - (offset+1);
-        for (int i = 0; i < len || i < end; i ++){
-            if (target.Src.charAt(i+offset) != script.charAt(i)) return false;
-        }
-        return true;
+        final String script = "<script";
+
+        if (offset+7 > target.Src.length()) return false;
+        String tag = target.Src.substring(offset, offset+7);
+
+        return tag.equals(script);
     }
 
     private static int processOtherBlock(HNode target, int left, String terminator) {
         int right = target.Src.indexOf(terminator, left);
-        if (right == NOT_FOUND) right = target.Src.length()-1;
+        if (right == NOT_FOUND) right = target.Src.length();
         else right += terminator.length();
-        target.children.add(new HNode(target, left, right,right,right,TYPE_COME));
+        target.children.add(new HNode(target, left, right,right,right, TYPE_SKIT));
         return right;
-
     }
 
     private static void elemChild(HNode target, int left, int right) {
-        target.children.add(new HNode(target, left, right, right, right, TYPE_ELEM));
+        target.children.add(new HNode(target, left, right+1, right+1, right, TYPE_ELEM));
     }
 
     private static void directiveChild(HNode target, int left, int right) {
@@ -188,14 +253,5 @@ public class HNode {
         target.children.add(new HNode(target, left, left, right, right, TYPE_TEXT));
     }
 
-    @SuppressWarnings("NullableProblems")
-    @Override
-    public String toString(){
-        try {
-            if (srcStart == contStart) return "text: " + Src.substring(srcStart, srcEnd);
-            return "elem: " + Src.substring(srcStart, srcEnd + 1); // just the opening tag
-        } catch (Exception ex){
-            return "fail: "+srcStart+".."+srcEnd;
-        }
-    }
+    //endregion
 }

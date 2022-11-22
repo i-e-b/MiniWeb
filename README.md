@@ -166,7 +166,9 @@ Call `TinyWebHook` with the path to your Android app's `assets` folder.
 
 #### Version
 
-`http://10.0.2.2:1310/host`
+```
+http://10.0.2.2:1310/host
+```
 
 This should return `ANDROID_EMU_HOST_V1`; If this path
 fails or returns a different value, Hot Reload will **not** be active.
@@ -174,14 +176,18 @@ This is agreed in code at `e.s.miniweb.core.EmulatorHostCall#HOST_UP_MSG` and `T
 
 #### Time
 
-`http://10.0.2.2:1310/time`
+```
+http://10.0.2.2:1310/time
+```
 
 This should return the current server time as **UTC**
 in the format `yyyy-MM-dd HH:mm:ss`.
 
 #### Assets
 
-`http://10.0.2.2:1310/assets/{path to asset}`
+```
+http://10.0.2.2:1310/assets/{path to asset}
+```
 
 This should return the file contents for the asset requested. The path is allowed
 to be any path into the assets folder.
@@ -193,7 +199,9 @@ The path may **not** contain `..` or `.` elements.
 
 #### Last touch
 
-`http://10.0.2.2:1310/touched/{path to asset}`
+```
+http://10.0.2.2:1310/touched/{path to asset}
+```
 
 This should return the modified date of the file requested.
 The Android app will request and store this when a file is loaded through the host, and
@@ -202,6 +210,28 @@ will periodically request again while the page is being displayed.
 * If the host returns 200, and the date has **not** changed, the Android app takes no action
 * If the host returns 200, and the date **has** changed, the Android app will try to reload the current page with existing data on the updated template
 * If the host returns any other code, the Android app takes no action.
+
+#### Last page push
+
+```
+http://10.0.2.2:1310/push
+```
+
+The Android app should `POST` to this when it renders a page.
+The Emulator Host will then make this available on the host machine
+
+**TODO**: The host app should translate `app://` and `asset://` urls.
+Asset urls should get redirected to an `http://10.0.2.2:1310/assets/` url, so the page can render.
+The `app://` paths should be replaced with `javascript:void()` or similar to prevent navigation.
+
+#### Last page get
+
+```
+http://10.0.2.2:1310/get
+```
+
+Returns the body of the last page that was pushed by the Android app.
+If nothing has been pushed yet, the page will be blank
 
 ## Other bits
 

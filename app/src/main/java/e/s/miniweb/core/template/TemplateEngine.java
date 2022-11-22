@@ -22,6 +22,7 @@ import java.util.Set;
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
 
 public class TemplateEngine {
     private static final String TAG = "TemplateEngine";
@@ -94,10 +95,7 @@ public class TemplateEngine {
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
         StringBuilder pageOut = new StringBuilder();
 
-        StringBuilder test = new StringBuilder();
-        for (String s: tmpl.TemplateLines){test.append(s);}
-        HNode node = HNode.parse(test.toString());
-        Log.i(TAG, node.toString());
+        experiment(tmpl);
 
         List<String> templateLines = tmpl.TemplateLines;
         for (int templateLineIndex = 0, templateLinesSize = templateLines.size(); templateLineIndex < templateLinesSize; templateLineIndex++) {
@@ -173,6 +171,21 @@ public class TemplateEngine {
         }
 
         return pageOut.toString();
+    }
+
+    private void experiment(TemplateResponse tmpl) {
+        // decompose template into html entity tree
+        StringBuilder test = new StringBuilder();
+        for (String s: tmpl.TemplateLines){test.append(s);test.append("\r\n");}
+        HNode node = HNode.parse(test.toString());
+        Log.i(TAG, node.toString());
+
+        // recompose to string
+        StringBuilder restored = new StringBuilder();
+        node.serialise(restored);
+
+        // push back to EmuHost
+        EmulatorHostCall.pushLastPage(restored.toString());
     }
 
 

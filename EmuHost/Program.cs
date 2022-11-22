@@ -12,6 +12,8 @@ internal static class Program
     
     private static volatile bool _running;
     private static string? _basePath;
+    
+    private static string? _lastPagePush;
 
     public static int Main(string[]? args)
     {
@@ -97,6 +99,12 @@ internal static class Program
                     ? SendNotFound(ctx, $"Not found: {path}")
                     : SendOk(ctx, GuessMime(path), File.ReadAllBytes(path));
             }
+            
+            case "push":
+                return HandlePagePush(ctx);
+            
+            case "get":
+                return SendOk(ctx, "text/html", Encoding.UTF8.GetBytes(_lastPagePush ?? ""));
 
             case "touched":
             {
@@ -115,7 +123,20 @@ internal static class Program
             }
         }
     }
-    
+
+    private static ContextResult HandlePagePush(HttpListenerContext ctx)
+    {
+        if (ctx.Request.HttpMethod != "POST") return SendBadMethod(ctx, ctx.Request.HttpMethod, "POST");
+        if (!ctx.Request.HasEntityBody) return SendBadMethod(ctx, ctx.Request.HttpMethod, "POST");
+        
+        using var ms = new MemoryStream();
+        ctx.Request.InputStream.CopyTo(ms);
+        
+        ms.Seek(0, SeekOrigin.Begin);
+        _lastPagePush = Encoding.UTF8.GetString(ms.ToArray());
+        return SendOk(ctx, "text/plain", Array.Empty<byte>());
+    }
+
     private static string GuessMime(string path) {
         if (path.EndsWith(".css")) return "text/css";
         if (path.EndsWith(".html")) return "text/html";
@@ -183,6 +204,18 @@ internal static class Program
         ctx.Response.StatusDescription = "Server Error";
         ctx.Response.AddHeader("Content-Type", "text/html");
         ctx.Response.OutputStream.Write((byte[]?)Encoding.UTF8.GetBytes(message));
+        ctx.Response.OutputStream.Flush();
+        return ContextResult.Error;
+    }
+    
+    private static ContextResult SendBadMethod(HttpListenerContext ctx, string wrong, string correct)
+    {
+        Console.WriteLine($"Warning: Called with wrong HTTP method. Expected '{correct}', got '{wrong}'");
+
+        ctx.Response.StatusCode = 405;
+        ctx.Response.StatusDescription = "Method Not Allowed";
+        ctx.Response.AddHeader("Content-Type", "text/plain");
+        ctx.Response.OutputStream.Write((byte[]?)Encoding.UTF8.GetBytes($"Wrong method. Use '{correct}'"));
         ctx.Response.OutputStream.Flush();
         return ContextResult.Error;
     }
