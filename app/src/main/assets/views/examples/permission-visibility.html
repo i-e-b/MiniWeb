@@ -9,57 +9,35 @@
 </p>
 <h2>Gate content with permissions</h2>
 <p>
-    <!-- Using 'needs':
-         Note that the '{{needs:...}}' and '{{end:needs}}'
-         MUST be on their own line, with no other text, elements, or comments.
-         The template engine isn't very smart, and it will try honour 'needs' groups if it finds them in comments.
-         -->
-
     You can gate parts of a view
-    {{needs: perm1, perm2}}
-        to specific permissions
-    {{end:needs}}
+    <_needs perm1 perm2>to specific permissions</_needs>
     while exposing others to any user.
 
     The items gated by a permission can be
-    {{needs: perm1, perm2}}
+    <_needs perm1 perm2>
 
         <a href="app://home" class="small-link">links</a> and other HTML,
 
-        {{needs: perm1}}
+        <!-- needs blocks can be nested -->
+        <_needs perm1>
             <br/>Or partial views:
-            {{view: url=app://examples/url-view?text=You%20have%20permission%20one}}
-
-    <!-- If you have nested 'needs' blocks, you can add the permissions to the '{{end:...}}`
-         The template engine will check these and give you an error if they don't match.
-         This is NOT required, and is for you convenience only. -->
-        {{end:needs perm1}}
-    {{end:needs perm1, perm2}}
+            <_view url="app://examples/url-view?text=You%20have%20permission%20one"></_view>
+        </_needs>
+    </_needs>
 </p>
 <p>
     If you don't have a given permission,
-    {{needs: not-a-real-permission}}
+    <_needs not-a-real-permission>
         <b>################# WAGGA! GABBA! BOGGO! Ha-ha, you can't see me! #################</b>
-    {{end:needs}}
+    </_needs>
     the HTML is continued <i>without</i> the gated content, and without inserting any other mark-up;
     so be sure to check your page <b>with and without</b> each set of permissions.
-    <!--
-
-    Plans:
-
-        - each listed permission is an 'or' - any permission in the set gives access
-        - permission 'needs' groups can be nested
-        - the permissions object is static, and shared across the whole app.
-          -> there should be a hook to populate it on log-in, and clear it on log-out.
-          -> there should be an identity string that is accessible to controllers to show user name (if any)
-        - would be good to annotate the controllers in a similar way
-
-    -->
 </p>
 
 <h2>Gate pages with permissions</h2>
 <p>
-    Individual controllers can have permission gates added using the <code>???</code> ??.
+    Individual controllers can have permission gates added using
+    <code>ControllerBinding.BindMethod(_, _, _, &quot;my, permission, list&quot;);</code>.
     Even if there is a mistake in the page, and the user is presented with a link
     they shouldn't have access to -- if the controller is gated, the link won't work.
 </p>
@@ -68,44 +46,37 @@
 </p>
 <p>
     <!-- This is "the right way" to do a restricted link -->
-    {{needs: perm1, perm2}}
+    <_needs perm1 perm2>
     Permitted: <a href="app://examples/is-permitted">Press here</a> - You should see the page
-    {{end:needs}}
+    </_needs>
 </p>
 <p>
-    It's a good idea to use both <code>{​{needs:...}​}</code> blocks and <code>???</code>
+    It's a good idea to use both <code>&lt;_needs ...&gt;</code> blocks and <code>BindMethod/4</code>
     restrictions together.
 </p>
 
-
+<h2>Alternatives</h2>
+<p>
+    <code>&lt;_needs ...&gt;</code> blocks can be followed by an <code>&lt;_else ...&gt;</code> block.
+    If the <code>&lt;_needs ...&gt;</code> block is not shown, then the <code>&lt;_else ...&gt;</code> block
+    is displayed.
+</p>
+<p>
+    <_needs not-a-real-permission>
+        #### YOU SHOULD NOT SEE THIS ####
+    </_needs>
+    <_else>
+        The 'needs' section and 'else' section of <code>&lt;_needs&gt;</code> are exclusive,
+        and will never show at the same time.
+    </_else>
+</p>
 
 <h2>Error handling and invalid uses</h2>
 <p>DO NOT DO ANY OF THESE, even if they seem to work</p>
 <p>
     You can make a 'needs' block with no permissions stated.
-    {{needs:}}
-    It will never show...
-    {{end:needs}}
+    <_needs>
+    It will never show...  #### YOU SHOULD NOT SEE THIS ####
+    </_needs>
     ...and it doesn't make much sense.
-</p>
-<p>
-    Unlike other directives, <code>{​{needs:..}​}</code>
-    blocks <b>DO NOT</b> show their contents if they error. Just <code>[ERROR]</code>
-    will appear:<br/>
-
-    {{needs: }}
-    ##### You should not be able to see this! ######
-    {{end:needs fish}}
-</p>
-<p>
-    In the worst case, this can cause the rest of the page to be hidden,
-    so always check the app logs for <code>TemplateEngine</code> messages
-    when developing pages.
-    {{needs: fish}}
-        meant to be hidden
-    {{end:neds}}
-
-    ##################################
-    #### Ooops! You can't see me! ####
-    ##################################
 </p>

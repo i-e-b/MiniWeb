@@ -6,7 +6,7 @@
     encompasses a single control, or a common page fragment.
 </p>
 <!--
-     '{{view:...}}' blocks can run in two modes: HTML files and URL requests.
+     '<_view ...>' blocks can run in two modes: HTML files and URL requests.
 
      * For 'file', the 'view' can have two parameters, 'path' and 'model'.
 
@@ -35,78 +35,78 @@
 <p>
     The content of a view will be added directly to the parent page, so you should not
     have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
-    {{view: model=model.subViewData, path=views/examples/a-sub-view.html}}
+    <_view model="model.subViewData" path="views/examples/a-sub-view.html"></_view>
 </p>
 <p>
     You can also use the top-level model from the page:
-    {{view: model=model, path=views/examples/a-sub-view.html}}
+    <_view model="model" path="views/examples/a-sub-view.html"></_view>
     which also has a short-cut form:
-    {{view: model, path=views/examples/a-sub-view.html}}
+    <_view model path="views/examples/a-sub-view.html"></_view>
 </p>
 <p>
-    If the path given to a <code>{​{view:...}​}</code> is not found, it
+    If the path given to a <code>&lt;_view ...&gt;</code> is not found, it
     will be retried with <code>.html</code> added (but it's better to get the path exactly correct):
-    {{view: path=views/examples/a-sub-view}}
+    <_view path="views/examples/a-sub-view"></_view>
 </p>
 
 <h2>View using a URL</h2>
 <p>
     A URL view is read by sending a 'get' request through the <code>AppWebRouter</code>
-    {{view: url=app://examples/url-view}}
+    <_view url="app://examples/url-view"></_view>
     You can't pass a model into a URL view, but you can give it query parameters, and
     the controller can run code.
-    {{view: url=app://examples/url-view?text=hello}}
+    <_view url="app://examples/url-view?text=hello"></_view>
     Editing the view used by the controller will result in a hot-reload.
 </p>
 <p>
     You can also pass query parameters to a URL view using 'model'.
     The <i>direct</i> fields will be added to the query parameters, but
     not any child fields.
-    {{view: model=model, url=app://examples/url-view?text2=hello}}
+    <_view model url="app://examples/url-view?text2=hello"></_view>
 </p>
 
 <h2>Repeating views</h2>
 <p>
-    Views can be repeated in a <code>{​{for:...}​}</code> list:
+    Views can be repeated in a <code>&lt;for:...&gt;</code> list:
 </p>
 <ul>
-    {{for:listOfThings}}
+    <_for listOfThings>
     <li>
-        {{view: model=item, path=views/examples/element-view.html}}
+        <_view model=item path="views/examples/element-view.html"></_view>
     </li>
-    {{end:listOfThings}}
+    </_for>
 </ul>
 
 <p>
-    URL views can also be repeated in a <code>{​{for:...}​}</code>.<br/>
+    URL views can also be repeated in a <code>&lt;for:...&gt;</code>.<br/>
     If given, the model will be passed in as query args.
 </p>
 <ul>
-    {{for:listOfThings}}
-    <li>
-        {{view: model=item, url=app://examples/element-view}}
-    </li>
-    {{end:listOfThings}}
+    <_for listOfThings>
+        <li>
+            <_view model=item url="app://examples/element-view"></_view>
+        </li>
+    </_for>
 </ul>
 
 <h2>Error handling and invalid uses</h2>
 <p>DO NOT DO ANY OF THESE, even if they seem to work</p>
 <p>
     This is what a view looks like if no matching path is found:<br/>
-    {{view: model=model.subViewData, path=not-a-path/not-a-view}}
+    <_view model="model.subViewData" path="not-a-path/not-a-view"></_view>
     <br/>If you get a path wrong, or use a path to a file you haven't made yet,
     the target will not be registered for hot-reload.
 </p>
 <p>
     This is what a URL view looks like if the controller crashes:<br/>
-    {{view: url=app://test/bad-method}}
+    <_view url="app://test/bad-method"></_view>
 </p>
 <p>
     This is what a view looks like if neither a path nor a url is given:<br/>
-    {{view: model=model.what}}
+    <_view model="model.what"></_view>
 </p>
 <p>
     This is what a view looks like if the 'item' model is used outside of a 'for' block:<br/>
-    {{view: model=item, path=views/examples/a-sub-view.html}}
+    <_view model="item" path="views/examples/a-sub-view.html"></_view>
     (this results in the view being called with <code>null</code> as the model)
 </p>

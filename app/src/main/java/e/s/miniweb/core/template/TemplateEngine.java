@@ -18,8 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
@@ -101,7 +99,7 @@ public class TemplateEngine {
 
         HNode node = HNode.parse(test.toString());
 
-        lastForBlockWasHidden = false;
+        lastBlockWasHidden = false;
         StringBuilder pageOut = new StringBuilder();
         recurseTemplate(node, pageOut, cursorItem, tmpl.Model);
 
@@ -183,7 +181,8 @@ public class TemplateEngine {
         return pageOut.toString();*/
     }
 
-    private static boolean lastForBlockWasHidden = false;
+    /** controls 'else' for 'for' and 'needs' */
+    private static boolean lastBlockWasHidden = false;
     /** Recurse through the HNode tree, rendering output and interpreting directives */
     private static void recurseTemplate(HNode node, StringBuilder out, Object item, Object model){
         // Template directives are never self-closing (i.e. <tag/>). They should not be empty (i.e. <tag></tag>)
@@ -210,8 +209,8 @@ public class TemplateEngine {
         } else {
             if (node.isUnderscored){
                 // Special things
-                Map<String,String>attrMap=new HashMap<>();
-                String tag = decomposeTag(node.Src.substring(node.srcStart, node.contStart), attrMap);
+                Map<String, String> params = new HashMap<>();
+                String tag = decomposeTag(node.Src.substring(node.srcStart, node.contStart), params);
                 switch (tag){
                     case "_": // plain data lookup
                     {
@@ -223,41 +222,54 @@ public class TemplateEngine {
                     }
                     case "_for": // loop block
                     {
-                        lastForBlockWasHidden = true;
-                        if (attrMap.isEmpty()) {
+                        lastBlockWasHidden = true;
+                        if (params.isEmpty()) {
                             out.append("[ERROR]");
                             break;
                         }
-                        String path = attrMap.keySet().iterator().next();
+                        String path = params.keySet().iterator().next();
                         Object items;
                         if (path.startsWith("#.")) items = findFieldObject(item, path.substring(2));
                         else items = findFieldObject(model, path);
                         if (items instanceof Iterable) { // 'for' item is a list. Repeat contents
                             @SuppressWarnings("rawtypes") Iterable listItems = (Iterable) items;
                             for (Object subItem : listItems) {
-                                lastForBlockWasHidden = false;
+                                lastBlockWasHidden = false;
                                 for (HNode child : node.children) recurseTemplate(child, out, subItem, model);
                             }
                         } else if (items instanceof Boolean) { // 'for' items is bool. Show if true
                             boolean b = (boolean) items;
                             if (b) {
-                                lastForBlockWasHidden = false;
+                                lastBlockWasHidden = false;
                                 for (HNode child : node.children) recurseTemplate(child, out, items, model);
                             }
                         } else if (items != null) { // something else. Show if not null{
-                            lastForBlockWasHidden = false;
+                            lastBlockWasHidden = false;
                             for (HNode child : node.children) recurseTemplate(child, out, items, model);
                         }
                         break;
                     }
                     case "_else": // else block
-                        if (lastForBlockWasHidden) {
+                    {
+                        if (lastBlockWasHidden) {
                             for (HNode child : node.children) recurseTemplate(child, out, item, model);
                         }
                         break;
+                    }
                     case "_needs": // needs block
-                        out.append("[needs]");
+                        String[] required = params.keySet().toArray(new String[0]);
+                        if (required.length > 0 && Permissions.HasAnyPermissions(required)) {
+                            lastBlockWasHidden = false;
+                            for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                        } else {
+                            lastBlockWasHidden = true;
+                        }
                         break;
+                    case "_view":
+                    {
+                        out.append("[view]");
+                        break;
+                    }
                     default:
                         out.append("[ERROR]");
                         Log.w(TAG, "Unknown tag: ");
