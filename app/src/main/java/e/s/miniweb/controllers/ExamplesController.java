@@ -18,7 +18,7 @@ public class ExamplesController extends ControllerBase {
         String controller = "examples";
 
         // pages
-        ControllerBinding.BindMethod(controller, "model-paths", this::modelPaths);
+        ControllerBinding.BindMethod(controller, "templating-examples", this::templatingExamples);
         ControllerBinding.BindMethod(controller, "partial-views", this::partialViews);
         ControllerBinding.BindMethod(controller, "permission-visibility", this::permissionVisibility);
         ControllerBinding.BindMethod(controller, "not-permitted", this::notPermitted, "not-a-real-permission,also-not-real");
@@ -81,7 +81,7 @@ public class ExamplesController extends ControllerBase {
     /**
      * Demo page with loads of templating examples
      */
-    private TemplateResponse modelPaths(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse templatingExamples(Map<String, String> params, WebResourceRequest request) {
         List<ExamplesController.ExampleObject> list = new ArrayList<>();
         list.add(new ExamplesController.ExampleObject("hello"));
         list.add(new ExamplesController.ExampleObject("this"));
@@ -111,7 +111,7 @@ public class ExamplesController extends ControllerBase {
             public final Map<String, NestedObjectModel> mapNest = sampleMapNest;
         };
 
-        return Page("examples/modelPaths", model);
+        return Page("examples/templating-examples", model);
     }
 
     // Internal classes used for view models

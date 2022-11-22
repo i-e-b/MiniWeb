@@ -30,7 +30,10 @@ public class HNode {
     public final HNode parent;
 
     /** Reference to original input string */
-    private final String Src;
+    public final String Src;
+
+    /** true if the element tag name starts with '_' */
+    public boolean isUnderscored;
 
     /** Parser type of this node */
     public int type;
@@ -45,15 +48,6 @@ public class HNode {
     /** end of inner HTML (internal span of this node, including children) */
     public int contEnd;
 
-    /** Render the node tree out to a string */
-    public void serialise(StringBuilder output) {
-        if (type == TYPE_ROOT){
-            for (HNode node: children) serialiseRecursive(node, output);
-        } else {
-            serialiseRecursive(this, output);
-        }
-    }
-
     /** Parse a HTML fragment to a node tree */
     public static HNode parse(String src) {
         HNode base = new HNode(null, src);
@@ -66,9 +60,20 @@ public class HNode {
         return base;
     }
 
+    /** Get the text contained by this element, or empty string */
+    public String innerText() {
+        try {
+            StringBuilder sb = new StringBuilder();
+            for (HNode node: this.children) innerTextRecursive(node, sb);
+            return sb.toString();
+        } catch (Exception ex) {
+            return "";
+        }
+    }
+
     @SuppressWarnings("NullableProblems")
     @Override
-    public String toString(){ // human readable, for diagnostics
+    public String toString(){
         try {
             String typeStr = "?";
             switch (type){
@@ -95,35 +100,38 @@ public class HNode {
     //region internals
 
 
-    /** String.indexOf() value for not found */
-    private static final int NOT_FOUND = -1;
-
-    private static void serialiseRecursive(HNode node, StringBuilder output) {
-        // Content or recursion?
+    private static void innerTextRecursive(HNode node, StringBuilder out) {
         if (node.children.size() < 1) {
             // not a container. Slap in contents
-            output.append(node.Src, node.srcStart, node.srcEnd + 1);
-        } else {
-            // Opening tag?
-            if (node.srcStart < node.contStart) {
-                output.append(node.Src, node.srcStart, node.contStart);
-            }
+            out.append(node.Src, node.srcStart, node.srcEnd + 1);
+            return;
+        }
 
-            // Recurse each child
-            for (HNode child : node.children) serialiseRecursive(child, output);
+        // Opening tag
+        if (node.srcStart < node.contStart) { // false for comments, scripts, etc
+            out.append(node.Src, node.srcStart, node.contStart);
+        }
 
-            // Closing tag
-            if (node.contEnd < node.srcEnd) {
-                output.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
-            }
+        // Recurse each child
+        for (HNode child : node.children) innerTextRecursive(child, out);
+
+        // Closing tag
+        if (node.contEnd < node.srcEnd) { // false for comments, scripts, etc
+            out.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
         }
     }
 
+    /** String.indexOf() value for not found */
+    private static final int NOT_FOUND = -1;
+
+
     protected HNode(HNode parent, String src){
         this.parent=parent;
+        this.isUnderscored = false;
         Src = src;
     }
     protected HNode(HNode parent, int srcStart, int contStart, int contEnd, int srcEnd, int type){
+        this.isUnderscored = false;
         this.parent = parent;Src = parent.Src;this.type = type;
         this.srcStart = srcStart;this.contStart = contStart;this.contEnd = contEnd;this.srcEnd = srcEnd;
     }
@@ -146,9 +154,6 @@ public class HNode {
                     HNode.textChild(target, left, lastIndex);
                 }
                 return leftAngle; // return because EOF
-            /*} else if (leftAngle > left) { // either we're not starting on an element
-                target.children.add(HNode.textChild(target, left, leftAngle));
-                left = leftAngle; // move forward*/
             } else if (leftAngle >= lastIndex) {
                 // sanity check: got a '<' as the last character
                 HNode.textChild(target, left, lastIndex);
@@ -158,23 +163,21 @@ public class HNode {
                 int rightAngle = src.indexOf('>', left);
 
                 // sanity checks
-                if (rightAngle == NOT_FOUND || more < 2 || rightAngle == left + 1) { // `<`...EOF (x2)   or  `<>`
+                if (rightAngle == NOT_FOUND || more < 1 || rightAngle == left + 1) { // `<`...EOF (x2)   or  `<>`
                     // invalid markup? Consider the rest as text and bail out
                     HNode.textChild(target, left, lastIndex);
                     return lastIndex + 1; // return because it's broken.
                 }
                 if (src.charAt(leftAngle+1) == '/') { //   </...
                     // If there is any content up to this point, add it as a 'text' child
-                    if (leftAngle-1 > left){
+                    if (leftAngle > left){ //???
                         HNode.textChild(target, left, leftAngle - 1);
                     }
 
                     // end of our own tag
                     target.srcEnd = rightAngle;
                     target.contEnd = leftAngle - 1;
-                    if (target.contEnd == 0){
-                        target.contEnd = -1;
-                    }
+                    if (target.contEnd == 0) target.contEnd = -1;
                     // TODO: unwind until we get to a matching tag, to handle bad markup.
                     return rightAngle + 1; // return because it's the end of this tag.
                 } else if (src.charAt(leftAngle+1) == '!') { // <!...
@@ -204,13 +207,14 @@ public class HNode {
                         // This looks like a real node. Recurse
 
                         // If there is any content up to this point, add it as a 'text' child
-                        if (leftAngle-1 > left){
+                        if (leftAngle > left){
                             HNode.textChild(target, left, leftAngle - 1);
                         }
 
                         // Start the child node and recurse it
                         HNode node = new HNode(target, target.Src);
                         node.type = TYPE_NODE;
+                        node.isUnderscored = src.charAt(leftAngle + 1) == '_';
                         node.srcStart = leftAngle;
                         left = parseRecursive(node, src, rightAngle + 1);
                         if (node.contEnd < 1 || node.srcEnd < 1){
@@ -252,6 +256,7 @@ public class HNode {
     private static void textChild(HNode target, int left, int right) {
         target.children.add(new HNode(target, left, left, right, right, TYPE_TEXT));
     }
+
 
     //endregion
 }

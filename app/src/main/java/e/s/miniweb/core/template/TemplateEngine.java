@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
@@ -53,6 +55,7 @@ public class TemplateEngine {
 
         // do the render!
         tmpl.ResponseBody = transformTemplate(tmpl, null);
+        EmulatorHostCall.pushLastPage(tmpl.ResponseBody);
         return tmpl;
     }
 
@@ -93,10 +96,17 @@ public class TemplateEngine {
      * Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
      */
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
+        StringBuilder test = new StringBuilder();
+        for (String s: tmpl.TemplateLines){test.append(s);test.append("\r\n");}
+
+        HNode node = HNode.parse(test.toString());
+
+        lastForBlockWasHidden = false;
         StringBuilder pageOut = new StringBuilder();
+        recurseTemplate(node, pageOut, cursorItem, tmpl.Model);
 
-        experiment(tmpl);
-
+        return pageOut.toString();
+/*
         List<String> templateLines = tmpl.TemplateLines;
         for (int templateLineIndex = 0, templateLinesSize = templateLines.size(); templateLineIndex < templateLinesSize; templateLineIndex++) {
             try {
@@ -170,22 +180,152 @@ public class TemplateEngine {
             }
         }
 
-        return pageOut.toString();
+        return pageOut.toString();*/
     }
 
-    private void experiment(TemplateResponse tmpl) {
-        // decompose template into html entity tree
-        StringBuilder test = new StringBuilder();
-        for (String s: tmpl.TemplateLines){test.append(s);test.append("\r\n");}
-        HNode node = HNode.parse(test.toString());
-        Log.i(TAG, node.toString());
+    private static boolean lastForBlockWasHidden = false;
+    /** Recurse through the HNode tree, rendering output and interpreting directives */
+    private static void recurseTemplate(HNode node, StringBuilder out, Object item, Object model){
+        // Template directives are never self-closing (i.e. <tag/>). They should not be empty (i.e. <tag></tag>)
+        // Known directives:
+        //
+        //   <_for {path}>{content}</_for>         -- repeat contents for each non-null item in model
+        //   <_else>{content}</_else>              -- show if previous _for did not display
+        //   <_>{path}</_>                         -- insert value from model
+        //   <_needs {perms...}>{content}</_needs> -- show content only if user has at least one of the permissions
+        //   <_view {params...}></_view>           -- inject a sub-view into the page
+        //
+        // Paths
+        //
+        //   a           -->  model.a         (or model.get("a") )
+        //   a.b.c       -->  model.a.b.c
+        //   #           -->  item
+        //   #.x.y       -->  item.x.y
 
-        // recompose to string
-        StringBuilder restored = new StringBuilder();
-        node.serialise(restored);
 
-        // push back to EmuHost
-        EmulatorHostCall.pushLastPage(restored.toString());
+        // Content or recursion?
+        if (node.children.size() < 1) {
+            // not a container. Slap in contents
+            out.append(node.Src, node.srcStart, node.srcEnd + 1);
+        } else {
+            if (node.isUnderscored){
+                // Special things
+                Map<String,String>attrMap=new HashMap<>();
+                String tag = decomposeTag(node.Src.substring(node.srcStart, node.contStart), attrMap);
+                switch (tag){
+                    case "_": // plain data lookup
+                    {
+                        String path = node.innerText();
+                        if (Objects.equals(path, "#")) out.append(findField(item, ""));
+                        else if (path.startsWith("#.")) out.append(findField(item, path.substring(2)));
+                        else out.append(findField(model, path));
+                        break;
+                    }
+                    case "_for": // loop block
+                    {
+                        lastForBlockWasHidden = true;
+                        if (attrMap.isEmpty()) {
+                            out.append("[ERROR]");
+                            break;
+                        }
+                        String path = attrMap.keySet().iterator().next();
+                        Object items;
+                        if (path.startsWith("#.")) items = findFieldObject(item, path.substring(2));
+                        else items = findFieldObject(model, path);
+                        if (items instanceof Iterable) { // 'for' item is a list. Repeat contents
+                            @SuppressWarnings("rawtypes") Iterable listItems = (Iterable) items;
+                            for (Object subItem : listItems) {
+                                lastForBlockWasHidden = false;
+                                for (HNode child : node.children) recurseTemplate(child, out, subItem, model);
+                            }
+                        } else if (items instanceof Boolean) { // 'for' items is bool. Show if true
+                            boolean b = (boolean) items;
+                            if (b) {
+                                lastForBlockWasHidden = false;
+                                for (HNode child : node.children) recurseTemplate(child, out, items, model);
+                            }
+                        } else if (items != null) { // something else. Show if not null{
+                            lastForBlockWasHidden = false;
+                            for (HNode child : node.children) recurseTemplate(child, out, items, model);
+                        }
+                        break;
+                    }
+                    case "_else": // else block
+                        if (lastForBlockWasHidden) {
+                            for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                        }
+                        break;
+                    case "_needs": // needs block
+                        out.append("[needs]");
+                        break;
+                    default:
+                        out.append("[ERROR]");
+                        Log.w(TAG, "Unknown tag: ");
+                        break;
+                }
+            } else {
+                // Normal HTML
+                // Opening tag?
+                if (node.srcStart < node.contStart) { // false for comments, scripts, etc
+                    out.append(node.Src, node.srcStart, node.contStart);
+                }
+                // Recurse each child
+                for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                // Closing tag
+                if (node.contEnd < node.srcEnd) { // false for comments, scripts, etc
+                    out.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
+                }
+            }
+        }
+    }
+
+    /** take "<_>", "<_for thing>" etc, and split into parts. Array is always at least 1 element, never null */
+    private static String decomposeTag(String tag, Map<String, String> attributes) {
+        // TODO: needs to cope with 3 styles:
+        // <tag>
+        // <tag word.dot word.dot>
+        // <tag key="my value" key2="value 2">
+
+        StringBuilder tagName = new StringBuilder();
+        StringBuilder key = new StringBuilder();
+        StringBuilder value = new StringBuilder();
+
+        int i = 1;
+        int end = tag.length()-1;
+
+        // get tag
+        for (; i < end; i++){
+            char c = tag.charAt(i);
+            if (c == ' ') break;
+            tagName.append(c);
+        }
+
+        // get params
+        boolean inQuote = false;
+        boolean hasValue = false;
+        for (; i < end; i++){
+            char c = tag.charAt(i);
+            if (c == '"') inQuote = !inQuote;
+            else if (c == '=') hasValue = true;
+            else if (!inQuote && c == ' ') {
+                if (key.length() > 0) {
+                    if (hasValue) attributes.put(key.toString(), value.toString());
+                    else attributes.put(key.toString(), key.toString());
+                }
+                key.setLength(0);
+                value.setLength(0);
+            } else {
+                if (inQuote) value.append(c);
+                else key.append(c);
+            }
+        }
+
+        if (key.length() > 0) {
+            if (hasValue) attributes.put(key.toString(), value.toString());
+            else attributes.put(key.toString(), key.toString());
+        }
+
+        return tagName.toString();
     }
 
 
@@ -607,7 +747,7 @@ public class TemplateEngine {
      * Hunts though object hierarchies for values.
      * The simplest and fastest path is to have a single field name.
      */
-    private Object searchForField(Object model, String name) throws NoSuchFieldException, IllegalAccessException {
+    private static Object searchForField(Object model, String name) throws NoSuchFieldException, IllegalAccessException {
         if (!name.contains(".")) { // simple case
             if (model instanceof Map) {
                 try {
@@ -652,7 +792,7 @@ public class TemplateEngine {
      * try to read the value of an object at the given index. Returns null on failure
      */
     @SuppressWarnings("rawtypes")
-    private Object getIterableIndexed(Object src, int idx) {
+    private static Object getIterableIndexed(Object src, int idx) {
         // coding in Java feels more old fashioned than C.
         try {
             if (src == null || idx < 0) return null;
@@ -672,7 +812,7 @@ public class TemplateEngine {
     /**
      * Returns true if the string contains only ascii numbers
      */
-    private boolean looksLikeInt(String str) {
+    private static boolean looksLikeInt(String str) {
         for (int i = 0; i < str.length(); i++) {
             char c = str.charAt(i);
             if (c < '0' || c > '9') return false;
@@ -684,7 +824,7 @@ public class TemplateEngine {
      * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
      * This is like `findField`, but returns an object instead of a string.
      */
-    private Object findFieldObject(Object model, String name) {
+    private static Object findFieldObject(Object model, String name) {
         try {
             if (model == null) return null;
             if (name == null) return null;
@@ -701,7 +841,7 @@ public class TemplateEngine {
      * find a named field in the given object. The name can be a dotted path (e.g. "parent.child.item")
      * This is like `findFieldObject`, but returns a string instead of an object.
      */
-    private String findField(Object model, String name) {
+    private static String findField(Object model, String name) {
         try {
             if (model == null) return "";
             if (name == null) return "";
