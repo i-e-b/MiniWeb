@@ -19,8 +19,8 @@ Things to do:
 - [x] Use the hot reload to continue view when restarted (like when changing dark mode)
 - [x] Global permissions object, with toggle flags in templates (also maybe in controllers)
 - [x] Memory monitor
-- [ ] "Else" options for `{{for:...}}` and `{{needs:...}}` blocks
-- [ ] Try to reduce complexity of template engine if possible
+- [x] "Else" options for `for` and `needs` blocks
+- [x] Try to reduce complexity of template engine if possible
 - [ ] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
 - [ ] language switching for user-facing messages; and paths (to support localising everything)
 
@@ -64,12 +64,16 @@ Template holes can be put anywhere in a template -- text, tags, scripts, etc.
 
 ### Simple values
 
-Values are copied from the model object into 'holes' in the html, which start with `{{` and end with `}}`.
+Values are copied from the model object into 'holes' in the html, which start with `<_>` and end with `</_>`.
 For example, with a model containing `public String greeting = "hello";` and a template with
-`<p>{{greeting}} world</p>`, then the final result is `<p>hello world</p>`
+`<p><_>greeting</_> world</p>`, then the final result is `<p>hello world</p>`
 
 Note: the field name used with a template hole is case sensitive, and must be a field on the model,
 not a function or method.
+
+For injection in other HTML tags and attributes, and for injecting into `<script>` tags,
+you can use <code>`{{`modelField`}}`</code>. This only does simple replacements, and can't
+do any logic, repetition, or sub-views.
 
 ### Complex values
 
@@ -78,40 +82,36 @@ examples. It's generally better to restructure your model instead.
 
 ### Looping and Conditional output
 
-You can use a pair of <code>`{{for:`model_field`}}`</code> and <code>`{{end:`model_field`}}`</code> to
+You can use a pair of <code>`<_for model_field>`</code> and <code>`</_for>`</code> to
 enclose a block of HTML.
-
-The `{{for:...}}` and `{{end:...}}` MUST be on their own line in the template file, with no
-other text on the same line (whitespace is ok). If any non-whitespace characters are on the 
-same line, the block will not be processed.
 
 * If the `model_field` is a boolean value, the block will be displayed once, and only if the value is `true`
 * If the `model_field` is a list or array, the block will repeat for each item
 * For any other value, the block will be displayed once, and only if the value is not `null`
 
-Inside a loop, you can use <code>`{{item:`field_name`}}`</code> to read values from each item.
+Inside a loop, you can use <code>`<_>#.`loopItem`</_>`</code> to read values from each item.
 
 You can loop or use a conditional block with a child item. For example:
 ```
-{{for:people}}
-    <p>Dear {{item:name}}, we are writing regarding account {{item:accountNumber}}...</p>
-{{end:people}}
+<_for people>
+    <p>Dear <_>#.name</_>, we are writing regarding account <_>#.accountNumber</_>...</p>
+</_for>
 ```
 
 ### Nesting loops
 
-You can put a `{{for:...}}` loop inside another, but it must be for a different field.
+You can put a `<_for ...>` loop inside another.
 
-You can loop over an item in a loop using `{{for:item:...}}`
+You can loop over an item in a loop using `<_for #.item>`
 ```
-{{for:accounts}}
-    <p>{{item:userName}} has these items</p>
+<_for accounts>
+    <p><_>#.userName</_> has these items</p>
     <ol>
-    {{for:item:basketItems}}
-        <li>{{item:name}} x {{item:quantity}}</li>
-    {{end:item:basketItems}}
+    <_for #.basketItems>
+        <li><_>#.name</_> x <_>#.quantity</_></li>
+    </_for>
     </ol>
-{{end:accounts}}
+</_for>
 ```
 
 ## Editing HTML

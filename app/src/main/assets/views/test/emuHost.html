@@ -1,19 +1,19 @@
 <h1>Emulator and Host Tests</h1>
 <a href="app://home">Home</a>
-<h3>Emulator host {{IsConnected}}, hot reload {{HotReloadRunning}}</h3>
+<h3>Emulator host <_>IsConnected</_>, hot reload <_>HotReloadRunning</_></h3>
 <p>
     When the app is running in an emulator, we <i>should</i> be
     able to access services running on the host machine.
 </p>
-{{for:hotReloadOn}}
+<_for hotReloadOn>
 <p>
     <b>Note:</b> as hot-reload is currently running, pages will
     take longer to open that normal (especially images).
     You can restart this app with the emulator host off to see
     the normal load speed.
 </p>
-{{end:hotReloadOn}}
-{{for:hotReloadOff}}
+</_for>
+<_else>
 <p>
     Hot-reload is currently off because the emulator host
     did not respond in time when the Android app was starting.
@@ -22,7 +22,7 @@
     If you started the emulator host after the Android app,
     you can restart the app now to enable hot-reload.
 </p>
-{{end:hotReloadOff}}
+</_else>
 <p>
     That means, if you're running this on your development machine,
     we can contact the host.
@@ -43,8 +43,8 @@
 </p>
 Time when page rendered:
 <ul>
-    <li>Android app: {{SelfTime}}</li>
-    <li>Host PC: {{HostTime}}</li>
+    <li>Android app: <_>SelfTime</_></li>
+    <li>Host PC: <_>HostTime</_></li>
 </ul>
 Time on host now: <span id="timeNow">Waiting</span>
 

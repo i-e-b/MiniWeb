@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="refresh" content="0; url={{RedirectUrl}}">
-    <script type="text/javascript">
-        {{for:ShouldClearHistory}}
+    <_for ShouldClearHistory>
+        <script type="text/javascript">
         manager.clearHistory();
-        {{end:ShouldClearHistory}}
+
+        </script>
+    </_for>
+    <script type="text/javascript">
         window.location.href = "{{RedirectUrl}}";
     </script>
     <title>Page Redirection</title>

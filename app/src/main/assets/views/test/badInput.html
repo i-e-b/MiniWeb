@@ -8,38 +8,11 @@
 </p>
 <hr/>
 <p>
-    If you specify a hole that does not exist in your model, it gets displayed {{like_this}}
+    If you specify a hole that does not exist in your model, it gets displayed <_>like_this</_>
 </p>
 <p>
     If you specify a hole with no name, it calls <tt>.toString()</tt> on the model.
-    Sometimes that may make sense, but most of the time it looks like this: {{}}
+    Sometimes that may make sense, but most of the time it looks like this: <_></_>
 </p>
 
 <hr/>
-
-<p>Junk line {{line</p>
-<p>Junk line {{line}</p>
-<p>Junk line {{line </p>}}
-{{for:listThing}}not empty!
-not empty{{for:listThing}}not empty!
-not empty{{for:listThing}}
-
-<!-- nesting of the same input is not supported -->
-{{for:listThing}}
-{{for:listThing}}
-
-<!-- non-simple nesting (can't end an outer 'for' before the inner one) -->
-{{for:line}}
-{{end:listThing}}
-<!-- ends without starts -->
-{{end:listThing}}
-{{end:listThing}}
-<!-- end for something that didn't start -->
-{{end:line}}
-<p>Junk line {line}}</p>
-<p>Junk line {{</p>
-<p>Junk line {{}</p>
-<p>Junk line {}}</p>
-
-<hr/>
-<tt>[end of page]</tt>

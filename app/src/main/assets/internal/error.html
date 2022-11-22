@@ -5,10 +5,14 @@
 </head>
 <body>
 <h1>Error</h1>
-<h2>{{Message}}</h2>
+<h2>
+    <_>Message</_>
+</h2>
 <p>A problem happened in the app. You can send a screenshot of this screen to the support team</p>
-{{for:Controller}}
-<p>Controller={{Controller}}; Method={{Method}};</p>
-{{end:Controller}}
+<_for Controller>
+    <p>
+        Controller=<_>Controller</_>; Method=<_>Method</_>;
+    </p>
+</_for>
 <a href="app://home">Home</a></body>
 </html>

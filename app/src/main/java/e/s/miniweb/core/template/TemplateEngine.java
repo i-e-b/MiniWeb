@@ -51,7 +51,7 @@ public class TemplateEngine {
 
         // do the render!
         tmpl.ResponseBody = transformTemplate(tmpl, null);
-        EmulatorHostCall.pushLastPage(tmpl.ResponseBody);
+        if (request.getClass() != InternalRequest.class) EmulatorHostCall.pushLastPage(tmpl.ResponseBody);
         return tmpl;
     }
 
@@ -83,17 +83,15 @@ public class TemplateEngine {
     //region Render core
 
     /**
-     * Replace {{name}} with tmpl.Model.name.toString()
-     * For {{for:name}}...{{end:name}}
-     * if tmpl.Model.name is enumerable, repeat the contained section for each item. The template {{item:childField}} becomes available.
-     * if tmpl.Model.name is null, or false, or "", then don't show the section
-     * otherwise, show the section once.
-     * Template holes `{{...}}` must not cross line in the doc -- both the open and close must be on the same line.
-     * Any `{{for:...}}` or `{{end:...}}` must be on their own line with only whitespace around them.
+     * Parse the template into a basic HTML tree.
+     * Walk that tree, doing template replacements where needed.
      */
     public String transformTemplate(TemplateResponse tmpl, Object cursorItem) {
         StringBuilder test = new StringBuilder();
-        for (String s: tmpl.TemplateLines){test.append(s);test.append("\r\n");}
+        for (String line: tmpl.TemplateLines){
+            test.append(moustacheReplace(tmpl.Model, line));
+            test.append("\r\n");
+        }
 
         HNode node = HNode.parse(test.toString());
 
@@ -104,8 +102,38 @@ public class TemplateEngine {
         return pageOut.toString();
     }
 
+    /** Replace '{{ var name }}' templates */
+    private String moustacheReplace(Object model, String line) {
+        // Hopefully the most common: do nothing.
+        if (!line.contains("{{") || !line.contains("}}")) return line;
+
+        // scan through the line, replacing as we go
+        StringBuilder sb = new StringBuilder();
+        int left = 0;
+        int end = line.length() - 1;
+        while (left < end){
+            int next = line.indexOf("{{", left);
+            if (next < 0) break;
+
+            int term = line.indexOf("}}", left);
+            if (term < next) {
+                sb.append(line.substring(left, term+2));
+                left = term + 2;
+                continue;
+            }
+
+            String key = line.substring(next+2, term);
+            sb.append(line.substring(left, next));
+            sb.append(findField(model, key));
+            left = term + 2;
+        }
+        sb.append(line.substring(left));
+        return sb.toString();
+    }
+
     /** controls 'else' for 'for' and 'needs' */
     private static boolean lastBlockWasHidden = false;
+
     /** Recurse through the HNode tree, rendering output and interpreting directives */
     private void recurseTemplate(HNode node, StringBuilder out, Object item, Object model){
         // Template directives are never self-closing (i.e. <tag/>). They should not be empty (i.e. <tag></tag>)
@@ -143,7 +171,7 @@ public class TemplateEngine {
                         else out.append(findField(model, path));
                         break;
                     }
-                    case "_for": // loop block
+                    case "_for":
                     {
                         lastBlockWasHidden = true;
                         if (params.isEmpty()) {
@@ -172,14 +200,15 @@ public class TemplateEngine {
                         }
                         break;
                     }
-                    case "_else": // else block
+                    case "_else":
                     {
                         if (lastBlockWasHidden) {
                             for (HNode child : node.children) recurseTemplate(child, out, item, model);
                         }
                         break;
                     }
-                    case "_needs": // needs block
+                    case "_needs":
+                    {
                         String[] required = params.keySet().toArray(new String[0]);
                         if (required.length > 0 && Permissions.HasAnyPermissions(required)) {
                             lastBlockWasHidden = false;
@@ -188,39 +217,31 @@ public class TemplateEngine {
                             lastBlockWasHidden = true;
                         }
                         break;
+                    }
                     case "_view":
                     {
                         injectViewBlock(params, model, item, out);
                         break;
                     }
-                    default:
+                    default: {
                         out.append("[ERROR]");
-                        Log.w(TAG, "Unknown tag: ");
+                        Log.w(TAG, "Unknown tag: '" + tag + "'");
                         break;
+                    }
                 }
-            } else {
-                // Normal HTML
-                // Opening tag?
-                if (node.srcStart < node.contStart) { // false for comments, scripts, etc
-                    out.append(node.Src, node.srcStart, node.contStart);
-                }
+            } else {// Normal HTML
+                // Opening tag. False for comments, scripts, etc
+                if (node.srcStart < node.contStart) out.append(node.Src, node.srcStart, node.contStart);
                 // Recurse each child
                 for (HNode child : node.children) recurseTemplate(child, out, item, model);
-                // Closing tag
-                if (node.contEnd < node.srcEnd) { // false for comments, scripts, etc
-                    out.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
-                }
+                // Closing tag. False for comments, scripts, etc
+                if (node.contEnd < node.srcEnd) out.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
             }
         }
     }
 
     /** take "<_>", "<_for thing>" etc, and split into parts. Array is always at least 1 element, never null */
     private static String decomposeTag(String tag, Map<String, String> attributes) {
-        // TODO: needs to cope with 3 styles:
-        // <tag>
-        // <tag word.dot word.dot>
-        // <tag key="my value" key2="value 2">
-
         StringBuilder tagName = new StringBuilder();
         StringBuilder key = new StringBuilder();
         StringBuilder value = new StringBuilder();
@@ -241,16 +262,17 @@ public class TemplateEngine {
         for (; i < end; i++){
             char c = tag.charAt(i);
             if (c == '"') inQuote = !inQuote;
-            else if (c == '=') hasValue = true;
+            else if (!inQuote && c == '=') hasValue = true;
             else if (!inQuote && c == ' ') {
                 if (key.length() > 0) {
                     if (hasValue) attributes.put(key.toString(), value.toString());
                     else attributes.put(key.toString(), key.toString());
+                    hasValue = false;
                 }
                 key.setLength(0);
                 value.setLength(0);
             } else {
-                if (inQuote) value.append(c);
+                if (hasValue) value.append(c);
                 else key.append(c);
             }
         }
@@ -499,7 +521,7 @@ public class TemplateEngine {
             if (model == null) return null;
             if (name == null) return null;
 
-            if (name.equals("")) return model; // special case {{for:}} -> use the model directly
+            if (name.equals("")) return model; // special case <_for> -> use the model directly
 
             return searchForField(model, name);
         } catch (NoSuchFieldException | IllegalAccessException ignore) {
@@ -516,7 +538,7 @@ public class TemplateEngine {
             if (model == null) return "";
             if (name == null) return "";
 
-            if (name.equals("")) { // special case: {{item:}} output the model as a string
+            if (name.equals("")) { // special case: <_></_> : output the model as a string
                 return model.toString();
             }
 

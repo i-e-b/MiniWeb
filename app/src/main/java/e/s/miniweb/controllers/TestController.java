@@ -143,7 +143,6 @@ public class TestController extends ControllerBase {
             public final String HostTime = EmulatorHostCall.queryHostForString("time");
             public final String SelfTime = getIsoDateNow();
             public final boolean hotReloadOn = HotReloadMonitor.TryLoadFromHost;
-            public final boolean hotReloadOff = !HotReloadMonitor.TryLoadFromHost;
         };
 
         return Page("test/emuHost", model);

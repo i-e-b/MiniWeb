@@ -7,8 +7,10 @@
 <h1>⛔ Not Permitted ⛔</h1>
 <h3>You do not have access to this page</h3>
 <p>If you think this is wrong, you can send a screenshot of this screen to the support team</p>
-{{for:Controller}}
-<p>Controller={{Controller}}; Method={{Method}};</p>
-{{end:Controller}}
+<_for Controller>
+    <p>
+        Controller=<_>Controller</_>; Method=<_>Method</_>;
+    </p>
+</_for>
 <a href="app://home">Home</a></body>
 </html>
