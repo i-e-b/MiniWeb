@@ -17,6 +17,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
@@ -63,12 +65,14 @@ public class TemplateEngine {
             tmpl.TemplateLines = new ArrayList<>();
             tmpl.Model = model;
 
-            copyLinesToTemplate("internal/" + name, tmpl);
+            copyLinesToTemplate(App.str(R.string.path_internal) + name, tmpl);
             return transformTemplate(tmpl, null);
         } catch (Exception ex) {
             // don't call the error template. Something might be broken with the apk!
             StringBuilder sb = new StringBuilder();
-            sb.append("<h1>Internal error</h1><pre>\r\n");
+            sb.append("<h1>");
+            sb.append(App.str(R.string.msg_err_header));
+            sb.append("</h1><pre>\r\n");
             StackTraceElement[] stack = ex.getStackTrace();
             for (StackTraceElement element : stack) {
                 sb.append(element.toString());
@@ -93,7 +97,7 @@ public class TemplateEngine {
             value = new StringBuilder();
         }
         public final void add(String t) {out.append(t);}
-        public final void error(){out.append("[ERROR]");}
+        public final void error(){out.append(App.str(R.string.msg_err_inline));}
         public final void addRange(String t, int left, int right){out.append(t, left, right);}
         public final String output(){return out.toString();}
 
@@ -348,7 +352,7 @@ public class TemplateEngine {
         Object viewModel = getViewModelObjectByPath(model, cursorItem, params);
 
         // Try to load the view into a new template
-        String viewPath = params.get("path");
+        String viewPath = App.str(R.string.path_views) + params.get("path");
         try {
             TemplateResponse viewTmpl = new TemplateResponse();
             viewTmpl.TemplateLines = new ArrayList<>();
@@ -587,7 +591,7 @@ public class TemplateEngine {
         if (resp.RedirectUrl != null) return resp;
 
         resp.TemplateLines = new ArrayList<>();
-        copyLinesToTemplate("views/" + resp.TemplatePath + ".html", resp);
+        copyLinesToTemplate(App.str(R.string.path_views) + resp.TemplatePath + ".html", resp);
 
         return resp;
     }

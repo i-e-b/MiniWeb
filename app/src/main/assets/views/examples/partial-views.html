@@ -35,18 +35,18 @@
 <p>
     The content of a view will be added directly to the parent page, so you should not
     have <code>&lt;html&gt;</code> or <code>&lt;head&gt;</code> tags in the view.
-    <_view model="model.subViewData" path="views/examples/a-sub-view.html"></_view>
+    <_view model="model.subViewData" path="examples/a-sub-view.html"></_view>
 </p>
 <p>
     You can also use the top-level model from the page:
-    <_view model="model" path="views/examples/a-sub-view.html"></_view>
+    <_view model="model" path="examples/a-sub-view.html"></_view>
     which also has a short-cut form:
-    <_view model path="views/examples/a-sub-view.html"></_view>
+    <_view model path="examples/a-sub-view.html"></_view>
 </p>
 <p>
     If the path given to a <code>&lt;_view&gt;</code> is not found, it
     will be retried with <code>.html</code> added (but it's better to get the path exactly correct):
-    <_view path="views/examples/a-sub-view"></_view>
+    <_view path="examples/a-sub-view"></_view>
 </p>
 
 <h2>View using a URL</h2>
@@ -72,7 +72,7 @@
 <ul>
     <_for listOfThings>
     <li>
-        <_view model=item path="views/examples/element-view.html"></_view>
+        <_view model=item path="examples/element-view.html"></_view>
     </li>
     </_for>
 </ul>
@@ -107,6 +107,6 @@
 </p>
 <p>
     This is what a view looks like if the 'item' model is used outside of a 'for' block:<br/>
-    <_view model="item" path="views/examples/a-sub-view.html"></_view>
+    <_view model="item" path="examples/a-sub-view.html"></_view>
     (this results in the view being called with <code>null</code> as the model)
 </p>

@@ -16,6 +16,7 @@ import java.util.Objects;
 import java.util.Stack;
 
 import e.s.miniweb.ControllerBindings;
+import e.s.miniweb.R;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
@@ -148,7 +149,7 @@ public class AppWebRouter extends WebViewClient {
         try {
             Uri url = request.getUrl();
             if (url == null){
-                pageResult.data = errorPage("Invalid url: null", "?", "?");
+                pageResult.data = errorPage(App.str(R.string.msg_err_bad_url)+": null", "?", "?");
                 pageResult.mimeType = HtmlMime;
                 pageResult.hotReloadCandidate = false;
                 return pageResult;
@@ -159,7 +160,7 @@ public class AppWebRouter extends WebViewClient {
 
             String scheme = request.getUrl().getScheme(); // can use to direct out
             if (scheme == null){
-                pageResult.data = errorPage("Invalid url: "+request.getUrl().toString(), controller, method);
+                pageResult.data = errorPage(App.str(R.string.msg_err_bad_url)+": "+request.getUrl().toString(), controller, method);
                 pageResult.mimeType = HtmlMime;
                 pageResult.hotReloadCandidate = false;
                 return pageResult;
@@ -189,7 +190,7 @@ public class AppWebRouter extends WebViewClient {
                 // TODO: handle this
                 return null;
             } else {
-                pageResult.data = errorPage("Unknown url type: "+scheme, controller, method);
+                pageResult.data = errorPage(App.str(R.string.msg_err_bad_url_type)+": "+scheme, controller, method);
                 pageResult.mimeType = HtmlMime;
                 pageResult.hotReloadCandidate = false;
                 return pageResult;
@@ -233,7 +234,7 @@ public class AppWebRouter extends WebViewClient {
         if (!isPartialView) ClearHotLoad();
 
         if (response == null) {// Output an error page
-            pageString = errorPage("Missing page", controller, method);
+            pageString = errorPage(App.str(R.string.msg_err_404), controller, method);
         } else if (isPartialView) { // should not add document wrappers
             pageString = response;
         } else if (response.startsWith("<!doctype html>") || response.startsWith("<html")) { // already has document wrappers
@@ -295,14 +296,21 @@ public class AppWebRouter extends WebViewClient {
         StringBuilder sb = new StringBuilder();
 
         sb.append("<!doctype html><html><head><meta charset=\"UTF-8\">"); // document with header and char set.
-        sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
-        sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\">"); // default styles for both light & dark
+        sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />"); // makes styling consistent
+        sb.append("<link rel=\"stylesheet\" href=\"asset://");
+        sb.append(App.str(R.string.path_styles));
+        sb.append("default.css\" type=\"text/css\">"); // default styles for both light & dark
 
+        // Add specific dark or light mode styles
+        sb.append("<link rel=\"stylesheet\" href=\"asset://");
+        sb.append(App.str(R.string.path_styles));
         if (mainView.inDarkMode()){
-            sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default-dark.css\" type=\"text/css\">");
+            sb.append("default-dark.css");
         } else {
-            sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default-light.css\" type=\"text/css\">");
+            sb.append("default-light.css");
         }
+        sb.append("\" type=\"text/css\">");
+
         sb.append("</head><body>");
         sb.append(response);
         sb.append("</body></html>");

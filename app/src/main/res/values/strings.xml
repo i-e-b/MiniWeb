@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- User-visible messages. Change per language -->
+    <string name="msg_err_header">Internal error</string>
+    <string name="msg_err_inline">[ERROR]</string>
+    <string name="msg_err_bad_url">Invalid url</string>
+    <string name="msg_err_bad_url_type">Unknown url type</string>
+    <string name="msg_err_404">Missing page</string>
+
+    <!-- Paths for asset loading. Change these per language for multi-region support -->
+    <string name="path_views">views/</string>
+    <string name="path_internal">internal/</string>
+    <string name="path_styles">styles/</string>
+
+    <!-- Paths for the Emulator Host (hot-reload tool) -->
+    <string name="emu_host_load_path">assets/</string>
+    <string name="emu_host_test_path">host</string>
+    <string name="emu_host_push_path">push</string>
+    <string name="emu_host_url">http://10.0.2.2:1310/</string>
+    <string name="emu_host_version" tools:ignore="Typos">ANDROID_EMU_HOST_V1</string>
+</resources>

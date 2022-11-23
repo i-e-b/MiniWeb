@@ -13,6 +13,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Objects;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
+
 /**
  * Utilities for connecting to a helper service when
  * this app is running on an emulator hosted by a PC
@@ -28,10 +31,10 @@ public class EmulatorHostCall {
     private static final int READ_TIME_MS = 2500;
 
     // This is where we expect to find the host tool running
-    private static final String HOST_BASE = "http://10.0.2.2:1310/";
+    private static final String HOST_BASE = App.str(R.string.emu_host_url);
 
     // Status strings we expect from the host
-    private static final String HOST_UP_MSG = "ANDROID_EMU_HOST_V1";
+    private static final String HOST_UP_MSG = App.str(R.string.emu_host_version);
     private static final String TAG = "EmulatorHostCall";
 
     /**
@@ -44,7 +47,7 @@ public class EmulatorHostCall {
         TrafficStats.setThreadStatsTag(512);
 
         try {
-            URL url = new URL(HOST_BASE + "host");
+            URL url = new URL(HOST_BASE + App.str(R.string.emu_host_test_path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 // Set short time-out. The host server should respond in a few ms.
@@ -166,7 +169,7 @@ public class EmulatorHostCall {
         final String charset = "UTF-8";
 
         try {
-            URL url = new URL(HOST_BASE + "push");
+            URL url = new URL(HOST_BASE + App.str(R.string.emu_host_push_path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 conn.setConnectTimeout(CONNECT_TIME_MS); // short connection time-out

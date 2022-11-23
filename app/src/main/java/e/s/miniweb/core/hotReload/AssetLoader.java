@@ -7,6 +7,9 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
+
 /** Loads files from either the APK's assets, or the emulator host */
 public class AssetLoader {
     private static final String TAG = "AssetLoader";
@@ -24,7 +27,7 @@ public class AssetLoader {
 
         if (HotReloadMonitor.TryLoadFromHost) {
             try {
-                InputStream is = EmulatorHostCall.queryHostForData("assets/" + path);
+                InputStream is = EmulatorHostCall.queryHostForData(App.str(R.string.emu_host_load_path) + path);
                 if (is != null) return is;
             } catch (Exception e){
                 Log.w(TAG, "Load from host failed. Trying APK; error="+e);

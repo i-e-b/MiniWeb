@@ -10,20 +10,6 @@ The app uses as much Android system features as possible to result
 in a small final APK. The app plus example pages comes to around 50KB
 when built in release mode.
 
-## Roadmap
-
-Things to do:
-
-- [x] Add partial views, including by taking a model sub-item
-- [x] Dark mode support (switchable css files & a js hook ?)
-- [x] Use the hot reload to continue view when restarted (like when changing dark mode)
-- [x] Global permissions object, with toggle flags in templates (also maybe in controllers)
-- [x] Memory monitor
-- [x] "Else" options for `for` and `needs` blocks
-- [x] Try to reduce complexity of template engine if possible
-- [x] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
-- [ ] language switching for user-facing messages; and paths (to support localising everything)
-
 ## How it works
 
 The app is based around a set of self registering "controllers". These are classes

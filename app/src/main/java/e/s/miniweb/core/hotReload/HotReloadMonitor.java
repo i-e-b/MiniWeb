@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import e.s.miniweb.R;
+import e.s.miniweb.core.App;
 import e.s.miniweb.core.template.TemplateEngine;
 import e.s.miniweb.core.template.TemplateResponse;
 
@@ -48,7 +50,8 @@ public class HotReloadMonitor {
             return;
         }
 
-        String key = "views/" + tmpl.TemplatePath + ".html";// see e.s.miniweb.core.template.TemplateEngine#getDocTemplate
+        String key = App.str(R.string.path_views) + tmpl.TemplatePath + ".html";
+        // see also: e.s.miniweb.core.template.TemplateEngine#getDocTemplate
 
         if (hotReloadAssets.containsKey(key)) return;
 
@@ -81,9 +84,13 @@ public class HotReloadMonitor {
 
     public static String GetHotController(){
         return (lastPageRendered == null) ? "" : lastPageRendered.Controller;
-    }public static String GetHotMethod(){
+    }
+
+    public static String GetHotMethod(){
         return (lastPageRendered == null) ? "" : lastPageRendered.Method;
-    }public static String GetHotParams(){
+    }
+
+    public static String GetHotParams(){
         return (lastPageRendered == null) ? "" : lastPageRendered.Params;
     }
 
@@ -96,7 +103,7 @@ public class HotReloadMonitor {
     /** Just do the render phase of `Run` */
     public static String RunHotReload(TemplateEngine template) {
         try {
-            template.copyLinesToTemplate("views/" + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            template.copyLinesToTemplate(App.str(R.string.path_views) + lastPageRendered.TemplatePath + ".html", lastPageRendered);
             return template.transformTemplate(lastPageRendered, null);
         } catch (Exception ex){
             Log.e(TAG, "Hot reload failed: "+ex);
