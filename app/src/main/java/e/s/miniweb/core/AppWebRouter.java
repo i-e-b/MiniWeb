@@ -17,7 +17,9 @@ import java.util.Stack;
 
 import e.s.miniweb.ControllerBindings;
 import e.s.miniweb.core.hotReload.AssetLoader;
+import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
+import e.s.miniweb.core.template.InternalRequest;
 import e.s.miniweb.core.template.TemplateEngine;
 import e.s.miniweb.core.template.TemplateResponse;
 import e.s.miniweb.core.template.WebMethod;
@@ -166,6 +168,9 @@ public class AppWebRouter extends WebViewClient {
                 pageResult.data = getControllerResponse(request, false); // Run the controller & template engine
                 pageResult.mimeType = HtmlMime;
                 pageResult.hotReloadCandidate = true;
+
+                if (request.getClass() != InternalRequest.class) EmulatorHostCall.pushLastPage(pageResult.data);
+
                 return pageResult;
 
             } else if (scheme.equals("asset")) { // request for a file stored in the APK
@@ -290,6 +295,7 @@ public class AppWebRouter extends WebViewClient {
         StringBuilder sb = new StringBuilder();
 
         sb.append("<!doctype html><html><head><meta charset=\"UTF-8\">"); // document with header and char set.
+        sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />");
         sb.append("<link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\">"); // default styles for both light & dark
 
         if (mainView.inDarkMode()){

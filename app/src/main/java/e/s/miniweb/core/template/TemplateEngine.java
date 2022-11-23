@@ -20,7 +20,6 @@ import java.util.Objects;
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
-import e.s.miniweb.core.hotReload.EmulatorHostCall;
 
 public class TemplateEngine {
     private static final String TAG = "TemplateEngine";
@@ -51,7 +50,6 @@ public class TemplateEngine {
 
         // do the render!
         tmpl.ResponseBody = transformTemplate(tmpl, null);
-        if (request.getClass() != InternalRequest.class) EmulatorHostCall.pushLastPage(tmpl.ResponseBody);
         return tmpl;
     }
 

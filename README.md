@@ -21,7 +21,7 @@ Things to do:
 - [x] Memory monitor
 - [x] "Else" options for `for` and `needs` blocks
 - [x] Try to reduce complexity of template engine if possible
-- [ ] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
+- [x] Page push back in the Emulator Host so pages can be viewed on a desktop browser (with hot reload too)
 - [ ] language switching for user-facing messages; and paths (to support localising everything)
 
 ## How it works

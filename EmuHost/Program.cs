@@ -6,6 +6,9 @@ namespace TinyWebHook;
 
 internal static class Program
 {
+    public const string Protocol = "http";
+    public const string PublicHost = "127.0.0.1:1310";
+    public const string EmulatorHost = "+:1310";
     public const string NotFoundMsg = "NOT_FOUND";
     public const string HostErrorMsg = "HOST_ERROR";
     public const string HostUpMsg = "ANDROID_EMU_HOST_V1";
@@ -37,11 +40,11 @@ internal static class Program
 
         var listener = new HttpListener();
         listener.IgnoreWriteExceptions = true;
-        listener.Prefixes.Add("ht"+"tp://+:1310/"); // Comment this out to run as low-privilege user. Hot-load will not work.
-        listener.Prefixes.Add("ht"+"tp://127.0.0.1:1310/");
+        listener.Prefixes.Add($"{Protocol}://{EmulatorHost}/"); // Comment this out to run as low-privilege user. Hot-load will not work.
+        listener.Prefixes.Add($"{Protocol}://{PublicHost}/");
         listener.Start();
 
-        Console.WriteLine("Listening on http://10.0.2.2:1310/  or  http://127.0.0.1:1310/");
+        Console.WriteLine($"Listening on {Protocol}://{EmulatorHost}/  or  {Protocol}://{PublicHost}/");
 
         while (_running)
         {
@@ -99,12 +102,27 @@ internal static class Program
                     ? SendNotFound(ctx, $"Not found: {path}")
                     : SendOk(ctx, GuessMime(path), File.ReadAllBytes(path));
             }
-            
+
+            case "local-assets": // a hack to fix-up CSS files etc when viewing in web browser.
+            {
+                if (string.IsNullOrWhiteSpace(_basePath)) return SendError(ctx, "Invalid base path");
+                var path = Path.Combine(_basePath, string.Join(Path.DirectorySeparatorChar, bits.Skip(1)));
+                
+                if (!File.Exists(path)) return SendNotFound(ctx, $"Not found: {path}");
+
+                if (path.Contains(".html") || path.Contains(".js") || path.Contains(".css"))
+                {
+                    return SendOk(ctx, GuessMime(path), FixUpPaths(File.ReadAllText(path)));
+                }
+                return SendOk(ctx, GuessMime(path), File.ReadAllBytes(path));
+
+            }
+
             case "push":
                 return HandlePagePush(ctx);
             
             case "get":
-                return SendOk(ctx, "text/html", Encoding.UTF8.GetBytes(_lastPagePush ?? ""));
+                return SendOk(ctx, "text/html", Encoding.UTF8.GetBytes(_lastPagePush ?? "<nothing pushed>"));
 
             case "touched":
             {
@@ -124,6 +142,11 @@ internal static class Program
         }
     }
 
+    private static byte[] FixUpPaths(string body)
+    {
+        return Encoding.UTF8.GetBytes(body .Replace("asset://", $"{Protocol}://{PublicHost}/local-assets/"));
+    }
+
     private static ContextResult HandlePagePush(HttpListenerContext ctx)
     {
         if (ctx.Request.HttpMethod != "POST") return SendBadMethod(ctx, ctx.Request.HttpMethod, "POST");
@@ -131,9 +154,10 @@ internal static class Program
         
         using var ms = new MemoryStream();
         ctx.Request.InputStream.CopyTo(ms);
-        
         ms.Seek(0, SeekOrigin.Begin);
-        _lastPagePush = Encoding.UTF8.GetString(ms.ToArray());
+        
+        _lastPagePush = Encoding.UTF8.GetString(ms.ToArray())
+            .Replace("asset://", $"{Protocol}://{PublicHost}/local-assets/"); // change app urls to web urls
         return SendOk(ctx, "text/plain", Array.Empty<byte>());
     }
 
