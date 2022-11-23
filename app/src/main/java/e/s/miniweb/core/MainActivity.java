@@ -3,6 +3,7 @@ package e.s.miniweb.core;
 import static android.content.res.Configuration.UI_MODE_NIGHT_YES;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.graphics.Color;
@@ -16,6 +17,8 @@ import android.view.ViewGroup;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
+import android.window.OnBackInvokedCallback;
+import android.window.OnBackInvokedDispatcher;
 
 import java.util.Set;
 
@@ -62,6 +65,11 @@ public class MainActivity extends Activity implements RouterControls {
             startHotReloadRepeater();
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            TiramisuBackHandler backHandler = new TiramisuBackHandler();
+            getOnBackInvokedDispatcher().registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, backHandler);
+        }
+
         if (!isWarmReload) StartupActions.beforeHomepage();
 
         // Activate the web-view with event handlers, and kick off the landing page.
@@ -104,10 +112,20 @@ public class MainActivity extends Activity implements RouterControls {
         Looper.loop(); // leave this thread running to do background jobs.
     }
 
+    @TargetApi(Build.VERSION_CODES.TIRAMISU)
+    class TiramisuBackHandler implements OnBackInvokedCallback{
+
+        @Override
+        public void onBackInvoked() {
+            onBackPressed();
+        }
+    }
+
     /** Handle back button.
     * If we're on the home page, we let Android deal with it.
     * Otherwise we send it down to the web view
      * */
+    @SuppressWarnings({"deprecation", "RedundantSuppression"}) // this is deprecated, but has no option on API < 33
     @Override
     public void onBackPressed() {
         // todo: replace this override with  Activity.getOnBackInvokedDispatcher()
@@ -121,7 +139,7 @@ public class MainActivity extends Activity implements RouterControls {
                 Toast.makeText(getApplicationContext(), "Press again to leave", Toast.LENGTH_SHORT).show();
                 lastPress = pressTime;
             } else { // last press was within 2.5 seconds. Pass to activity (usually does a soft exit)
-                super.onBackPressed();
+                this.finish();
             }
         }
     }
