@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements RouterControls {
 
         // Hot-reload loop (with self terminate if not connected)
         if (backgroundHandler == null) {
-            backgroundHandler = new Handler();
+            backgroundHandler = new Handler(Looper.myLooper());
             startHotReloadRepeater();
         }
 
@@ -110,6 +110,8 @@ public class MainActivity extends Activity implements RouterControls {
      * */
     @Override
     public void onBackPressed() {
+        // todo: replace this override with  Activity.getOnBackInvokedDispatcher()
+
         // try to go back a page
         if (!webRouter.goBack(webView)) {
             // nothing to go back to. Maybe exit app?

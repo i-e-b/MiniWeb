@@ -1,9 +1,14 @@
 plugins {
     id 'com.android.application'
 }
-
 android {
     compileSdk 33
+
+    tasks.withType(JavaCompile) {
+        configure(options) {
+            options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' // flag up potential issues
+        }
+    }
 
     defaultConfig {
         applicationId "e.s.miniweb"

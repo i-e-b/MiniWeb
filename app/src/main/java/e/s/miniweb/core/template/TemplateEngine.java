@@ -80,6 +80,42 @@ public class TemplateEngine {
 
     //region Render core
 
+    /** This mess is for GC optimisation. It all gets inlined anyway. */
+    static class PageOut {
+        private final StringBuilder out;
+        private final StringBuilder tag;
+        private final StringBuilder key;
+        private final StringBuilder value;
+        public PageOut(){
+            out = new StringBuilder();
+            tag = new StringBuilder();
+            key = new StringBuilder();
+            value = new StringBuilder();
+        }
+        public final void add(String t) {out.append(t);}
+        public final void error(){out.append("[ERROR]");}
+        public final void addRange(String t, int left, int right){out.append(t, left, right);}
+        public final String output(){return out.toString();}
+
+        public final void resetTag() {
+            tag.setLength(0);
+            key.setLength(0);
+            value.setLength(0);
+        }
+
+        public void tagAdd(char c) {tag.append(c);}
+        public String tagStr() {return tag.toString();}
+
+        public void tagAddToMap(boolean hasValue, Map<String, String> attributes) {
+            if (key.length() > 0) {
+                if (hasValue) attributes.put(key.toString(), value.toString());
+                else attributes.put(key.toString(), key.toString());
+            }
+        }
+        public void valueAdd(char c) {value.append(c);}
+        public void keyAdd(char c) {key.append(c);}
+    }
+
     /**
      * Parse the template into a basic HTML tree.
      * Walk that tree, doing template replacements where needed.
@@ -94,10 +130,10 @@ public class TemplateEngine {
         HNode node = HNode.parse(test.toString());
 
         lastBlockWasHidden = false;
-        StringBuilder pageOut = new StringBuilder();
+        PageOut pageOut = new PageOut();
         recurseTemplate(node, pageOut, cursorItem, tmpl.Model);
 
-        return pageOut.toString();
+        return pageOut.output();
     }
 
     /** Replace '{{ var name }}' templates */
@@ -133,7 +169,8 @@ public class TemplateEngine {
     private static boolean lastBlockWasHidden = false;
 
     /** Recurse through the HNode tree, rendering output and interpreting directives */
-    private void recurseTemplate(HNode node, StringBuilder out, Object item, Object model){
+    private void recurseTemplate(HNode node, PageOut page, Object item, Object model){
+        // This method is the largest in the project.
         // Template directives are never self-closing (i.e. <tag/>). They should not be empty (i.e. <tag></tag>)
         // Known directives:
         //
@@ -150,30 +187,29 @@ public class TemplateEngine {
         //   #           -->  item
         //   #.x.y       -->  item.x.y
 
-
         // Content or recursion?
         if (!node.isUnderscored && node.children.size() < 1) {
             // not a container. Slap in contents
-            out.append(node.Src, node.srcStart, node.srcEnd + 1);
+            page.addRange(node.Src, node.srcStart, node.srcEnd + 1);
         } else {
             if (node.isUnderscored){
                 // Special things
                 Map<String, String> params = new HashMap<>();
-                String tag = decomposeTag(node.Src.substring(node.srcStart, node.contStart), params);
+                String tag = decomposeTag(page, node.Src.substring(node.srcStart, node.contStart), params);
                 switch (tag){
                     case "_": // plain data lookup
                     {
                         String path = node.innerText();
-                        if (Objects.equals(path, "#")) out.append(findField(item, ""));
-                        else if (path.startsWith("#.")) out.append(findField(item, path.substring(2)));
-                        else out.append(findField(model, path));
+                        if (Objects.equals(path, "#")) page.add(findField(item, ""));
+                        else if (path.startsWith("#.")) page.add(findField(item, path.substring(2)));
+                        else page.add(findField(model, path));
                         break;
                     }
                     case "_for":
                     {
                         lastBlockWasHidden = true;
                         if (params.isEmpty()) {
-                            out.append("[ERROR]");
+                            page.error();
                             break;
                         }
                         String path = params.keySet().iterator().next();
@@ -184,24 +220,24 @@ public class TemplateEngine {
                             @SuppressWarnings("rawtypes") Iterable listItems = (Iterable) items;
                             for (Object subItem : listItems) {
                                 lastBlockWasHidden = false;
-                                for (HNode child : node.children) recurseTemplate(child, out, subItem, model);
+                                for (HNode child : node.children) recurseTemplate(child, page, subItem, model);
                             }
                         } else if (items instanceof Boolean) { // 'for' items is bool. Show if true
                             boolean b = (boolean) items;
                             if (b) {
                                 lastBlockWasHidden = false;
-                                for (HNode child : node.children) recurseTemplate(child, out, items, model);
+                                for (HNode child : node.children) recurseTemplate(child, page, items, model);
                             }
                         } else if (items != null) { // something else. Show if not null{
                             lastBlockWasHidden = false;
-                            for (HNode child : node.children) recurseTemplate(child, out, items, model);
+                            for (HNode child : node.children) recurseTemplate(child, page, items, model);
                         }
                         break;
                     }
                     case "_else":
                     {
                         if (lastBlockWasHidden) {
-                            for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                            for (HNode child : node.children) recurseTemplate(child, page, item, model);
                         }
                         break;
                     }
@@ -210,7 +246,7 @@ public class TemplateEngine {
                         String[] required = params.keySet().toArray(new String[0]);
                         if (required.length > 0 && Permissions.HasAnyPermissions(required)) {
                             lastBlockWasHidden = false;
-                            for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                            for (HNode child : node.children) recurseTemplate(child, page, item, model);
                         } else {
                             lastBlockWasHidden = true;
                         }
@@ -218,41 +254,39 @@ public class TemplateEngine {
                     }
                     case "_view":
                     {
-                        injectViewBlock(params, model, item, out);
+                        injectViewBlock(params, model, item, page);
                         break;
                     }
                     default: {
-                        out.append("[ERROR]");
+                        page.error();
                         Log.w(TAG, "Unknown tag: '" + tag + "'");
                         break;
                     }
                 }
             } else {// Normal HTML
                 // Opening tag. False for comments, scripts, etc
-                if (node.srcStart < node.contStart) out.append(node.Src, node.srcStart, node.contStart);
+                if (node.srcStart < node.contStart) page.addRange(node.Src, node.srcStart, node.contStart);
                 // Recurse each child
-                for (HNode child : node.children) recurseTemplate(child, out, item, model);
+                for (HNode child : node.children) recurseTemplate(child, page, item, model);
                 // Closing tag. False for comments, scripts, etc
-                if (node.contEnd < node.srcEnd) out.append(node.Src, node.contEnd + 1, node.srcEnd + 1);
+                if (node.contEnd < node.srcEnd) page.addRange(node.Src, node.contEnd + 1, node.srcEnd + 1);
             }
         }
     }
 
     /** take "<_>", "<_for thing>" etc, and split into parts. Array is always at least 1 element, never null */
-    private static String decomposeTag(String tag, Map<String, String> attributes) {
-        StringBuilder tagName = new StringBuilder();
-        StringBuilder key = new StringBuilder();
-        StringBuilder value = new StringBuilder();
-
+    private static String decomposeTag(PageOut page, String tag, Map<String, String> attributes) {
         int i = 1;
         int end = tag.length()-1;
+        page.resetTag();
 
         // get tag
         for (; i < end; i++){
             char c = tag.charAt(i);
             if (c == ' ') break;
-            tagName.append(c);
+            page.tagAdd(c);
         }
+        String tagOut = page.tagStr();
 
         // get params
         boolean inQuote = false;
@@ -262,25 +296,17 @@ public class TemplateEngine {
             if (c == '"') inQuote = !inQuote;
             else if (!inQuote && c == '=') hasValue = true;
             else if (!inQuote && c == ' ') {
-                if (key.length() > 0) {
-                    if (hasValue) attributes.put(key.toString(), value.toString());
-                    else attributes.put(key.toString(), key.toString());
-                    hasValue = false;
-                }
-                key.setLength(0);
-                value.setLength(0);
+                page.tagAddToMap(hasValue, attributes);
+                hasValue = false;
+                page.resetTag();
             } else {
-                if (hasValue) value.append(c);
-                else key.append(c);
+                if (hasValue) page.valueAdd(c);
+                else page.keyAdd(c);
             }
         }
 
-        if (key.length() > 0) {
-            if (hasValue) attributes.put(key.toString(), value.toString());
-            else attributes.put(key.toString(), key.toString());
-        }
-
-        return tagName.toString();
+        page.tagAddToMap(hasValue, attributes);
+        return tagOut;
     }
 
 
@@ -289,7 +315,7 @@ public class TemplateEngine {
      * Returns number of extra lines consumed from the input template
      *
      */
-    private void injectViewBlock(Map<String, String> params, Object model, Object cursorItem, StringBuilder out) {
+    private void injectViewBlock(Map<String, String> params, Object model, Object cursorItem, PageOut page) {
         if (params.containsKey("url")) { // should do a GET to this URL
             try {
                 Uri target = Uri.parse(params.get("url"));
@@ -301,11 +327,11 @@ public class TemplateEngine {
                 }
                 WebResourceRequest request = new InternalRequest(target);
                 String response = router.getControllerResponse(request, true);
-                out.append(response);
+                page.add(response);
                 return;
             } catch (Exception ex) {
                 Log.w(TAG, "URL view block failed:" + ex);
-                out.append("[ERROR]");
+                page.error();
                 return;
             }
         }
@@ -313,7 +339,7 @@ public class TemplateEngine {
         // exit early if there is no path
         if (!params.containsKey("path")) {
             Log.w(TAG, "Invalid view block: no url or path. Check page mark-up.");
-            out.append("[ERROR]");
+            page.error();
             return;
         }
 
@@ -329,13 +355,13 @@ public class TemplateEngine {
             viewTmpl.Model = viewModel;
 
             copyLinesToTemplate(viewPath, viewTmpl);
-            out.append(transformTemplate(viewTmpl, null));
+            page.add(transformTemplate(viewTmpl, null));
         } catch (FileNotFoundException fex) {
             Log.w(TAG, "Failed to load view! TargetFile=" + viewPath);
-            out.append("[ERROR]");
+            page.error();
         } catch (Exception ex) {
             Log.w(TAG, "Failed to load view block:" + ex);
-            out.append("[ERROR]");
+            page.error();
         }
     }
 

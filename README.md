@@ -7,7 +7,7 @@ A simple set of drivers for the built-in Android WebView that provides
 a web-like development environment contained in a single app.
 
 The app uses as much Android system features as possible to result
-in a small final APK. The app plus example pages comes to around 30KB
+in a small final APK. The app plus example pages comes to around 50KB
 when built in release mode.
 
 ## Roadmap
@@ -124,7 +124,6 @@ using `View` > `Open in Browser` in the Android Studio main menu:
 
 ![View, Open in Browser](https://github.com/i-e-b/MiniWeb/raw/main/_docs/view-in-browser-android-studio.png)
 
-
 ## Emulator Host and Hot Reload
 
 MiniWeb supports "hot-reload" of pages and assets when running under an emulator
@@ -220,14 +219,10 @@ http://10.0.2.2:1310/push
 The Android app should `POST` to this when it renders a page.
 The Emulator Host will then make this available on the host machine
 
-**TODO**: The host app should translate `app://` and `asset://` urls.
-Asset urls should get redirected to an `http://10.0.2.2:1310/assets/` url, so the page can render.
-The `app://` paths should be replaced with `javascript:void()` or similar to prevent navigation.
-
 #### Last page get
 
 ```
-http://10.0.2.2:1310/get
+http://127.0.0.1:1310/get
 ```
 
 Returns the body of the last page that was pushed by the Android app.

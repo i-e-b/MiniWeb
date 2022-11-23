@@ -44,7 +44,7 @@
     <_view model path="views/examples/a-sub-view.html"></_view>
 </p>
 <p>
-    If the path given to a <code>&lt;_view ...&gt;</code> is not found, it
+    If the path given to a <code>&lt;_view&gt;</code> is not found, it
     will be retried with <code>.html</code> added (but it's better to get the path exactly correct):
     <_view path="views/examples/a-sub-view"></_view>
 </p>
@@ -67,7 +67,7 @@
 
 <h2>Repeating views</h2>
 <p>
-    Views can be repeated in a <code>&lt;for:...&gt;</code> list:
+    Views can be repeated in a <code>&lt;_for&gt;</code> list:
 </p>
 <ul>
     <_for listOfThings>
@@ -78,7 +78,7 @@
 </ul>
 
 <p>
-    URL views can also be repeated in a <code>&lt;for:...&gt;</code>.<br/>
+    URL views can also be repeated in a <code>&lt;_for&gt;</code>.<br/>
     If given, the model will be passed in as query args.
 </p>
 <ul>
