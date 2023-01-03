@@ -10,6 +10,12 @@ The app uses as much Android system features as possible to result
 in a small final APK. The app plus example pages comes to around 50KB
 when built in release mode.
 
+### Road-map
+
+- [ ] **Overlay** - Draw a new view over the current one. Clicking outside of the new view, or clicking 'back' reloads the original view without the overlay.
+- [ ] Implement something big (or at least non-trivial) in this. Add anything found to be missing
+- [ ] Hooks for 'wallet' service, hot code loading / live updates.
+
 ## How it works
 
 The app is based around a set of self registering "controllers". These are classes
