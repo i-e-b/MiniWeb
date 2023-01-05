@@ -6,20 +6,26 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.PixelCopy;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Toast;
 import android.window.OnBackInvokedCallback;
 import android.window.OnBackInvokedDispatcher;
 
+import java.io.ByteArrayOutputStream;
 import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
@@ -76,6 +82,7 @@ public class MainActivity extends Activity implements RouterControls {
         runOnUiThread(()->{
             // setup the web view
             webView = new WebView(this);
+            webView.setDrawingCacheEnabled(true); // used to capture view as an image
             this.setContentView(webView, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -150,6 +157,53 @@ public class MainActivity extends Activity implements RouterControls {
         if (!hasLoaded) {
             hasLoaded = true;
             hideTitle();
+        }
+        new Thread(this::sentScreenShotToHost).start();
+    }
+
+    private void sentScreenShotToHost() {
+
+// new Thread(this::loadWebViewWithLocalClient).start();
+        // experimental screen capture
+        try {
+            // deprecated: use PixelCopy instead
+            //android.view.PixelCopy.request();
+            /*Bitmap b = webView.getDrawingCache();
+            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+            b.compress(Bitmap.CompressFormat.PNG, 95, byteArrayOutputStream);
+
+            EmulatorHostCall.pushScreenShot(byteArrayOutputStream.toByteArray());
+
+            byteArrayOutputStream.close();*/
+
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Window w = this.getWindow();
+                View view = webView;
+                int width = view.getWidth();
+                int height = view.getHeight();
+                Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                int[] loc = new int[2];
+                view.getLocationInWindow(loc);
+                Rect srcRect = new Rect(loc[0], loc[1], loc[0] + width, loc[1] + height);
+                PixelCopy.request(w, srcRect, bitmap,
+                        result -> {
+                            if (result == PixelCopy.SUCCESS) {
+                                try {
+                                    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+                                    bitmap.compress(Bitmap.CompressFormat.PNG, 95, byteArrayOutputStream);
+                                    EmulatorHostCall.pushScreenShot(byteArrayOutputStream.toByteArray());
+                                    byteArrayOutputStream.close();
+                                } catch (Exception bse){
+                                    Log.w(TAG, "Screen-shot push failed: " + bse);
+                                }
+                            } else {
+                                Log.w(TAG, "Screen-shot capture copy fail: " + result);
+                            }
+                        }, backgroundHandler);
+            }
+        } catch (Exception ex) {
+            Log.w(TAG, "Screen-shot capture fail: " + ex);
         }
     }
 

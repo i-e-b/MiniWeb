@@ -197,4 +197,40 @@ public class EmulatorHostCall {
             Log.i(TAG, "Failed to send page to host. Probably not connected.");
         }
     }
+
+    public static void pushScreenShot(byte[] imageData) {
+        if (!HotReloadMonitor.TryLoadFromHost) return;
+        // This just shuts up a weird Android system warning
+        TrafficStats.setThreadStatsTag(512);
+
+        try {
+            URL url = new URL(HOST_BASE + App.str(R.string.emu_host_push_screen_path));
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            try {
+                conn.setConnectTimeout(CONNECT_TIME_MS); // short connection time-out
+                conn.setReadTimeout(READ_TIME_MS);
+                conn.setDoOutput(true);
+
+                OutputStream output = conn.getOutputStream();
+                output.write(imageData);
+                output.close();
+
+                InputStream is = conn.getInputStream();
+                BufferedReader br = new BufferedReader(new InputStreamReader(is));
+
+                // While the BufferedReader readLine is not null
+                //noinspection StatementWithEmptyBody
+                while (br.readLine() != null) {
+                }
+
+                is.close();
+                br.close();
+            } finally {
+                conn.disconnect();
+            }
+        } catch (Exception e){
+            Log.w(TAG, e.toString());
+            Log.i(TAG, "Failed to send page to host. Probably not connected.");
+        }
+    }
 }

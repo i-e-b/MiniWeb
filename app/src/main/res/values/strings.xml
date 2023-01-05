@@ -17,6 +17,7 @@
     <string name="emu_host_load_path">assets/</string>
     <string name="emu_host_test_path">host</string>
     <string name="emu_host_push_path">push</string>
+    <string name="emu_host_push_screen_path">screen-shot</string>
     <string name="emu_host_url">http://10.0.2.2:1310/</string>
     <string name="emu_host_version" tools:ignore="Typos">ANDROID_EMU_HOST_V1</string>
 </resources>

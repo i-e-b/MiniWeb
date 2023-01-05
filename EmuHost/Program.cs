@@ -121,6 +121,9 @@ internal static class Program
             case "push":
                 return HandlePagePush(ctx);
             
+            case "screen-shot":
+                return HandleScreenShotPush(ctx);
+            
             case "get":
                 return SendOk(ctx, "text/html", Encoding.UTF8.GetBytes(_lastPagePush ?? "<nothing pushed>"));
 
@@ -145,6 +148,20 @@ internal static class Program
     private static byte[] FixUpPaths(string body)
     {
         return Encoding.UTF8.GetBytes(body .Replace("asset://", $"{Protocol}://{PublicHost}/local-assets/"));
+    }
+
+    private static ContextResult HandleScreenShotPush(HttpListenerContext ctx)
+    {
+        if (ctx.Request.HttpMethod != "POST") return SendBadMethod(ctx, ctx.Request.HttpMethod, "POST");
+        if (!ctx.Request.HasEntityBody) return SendBadMethod(ctx, ctx.Request.HttpMethod, "POST");
+        
+        using var file = File.Open(@"C:\Temp\LastMiniWebSS.png", FileMode.Create, FileAccess.Write, FileShare.None);
+        
+        ctx.Request.InputStream.CopyTo(file);
+        file.Flush();
+        file.Close();
+        
+        return SendOk(ctx, "text/plain", Array.Empty<byte>());
     }
 
     private static ContextResult HandlePagePush(HttpListenerContext ctx)
