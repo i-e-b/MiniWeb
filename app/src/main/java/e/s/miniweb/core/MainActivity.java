@@ -29,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.Set;
 
 import e.s.miniweb.JsCallbackManager;
+import e.s.miniweb.R;
 import e.s.miniweb.StartupActions;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
@@ -279,6 +280,7 @@ public class MainActivity extends Activity implements RouterControls {
         // the 'loading' message gets a chance to update
         new Thread(this::loadWebViewWithLocalClient).start();
 
+        setTheme(R.style.AppTheme); // Hide the loading icon. Shouldn't be needed, but just for "correctness"
         super.onCreate(savedInstanceState);
     }
 
