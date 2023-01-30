@@ -83,7 +83,7 @@ public class MainActivity extends Activity implements RouterControls {
         runOnUiThread(()->{
             // setup the web view
             webView = new WebView(this);
-            webView.setDrawingCacheEnabled(true); // used to capture view as an image
+            webView.setVisibility(View.INVISIBLE); // Made visible after first page load. We do this to prevent a flash of blank page.
             this.setContentView(webView, new ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -156,6 +156,7 @@ public class MainActivity extends Activity implements RouterControls {
      * On the first render of the homepage, we hide 'Loading...' messages */
     public void pageLoaded() {
         if (!hasLoaded) {
+            webView.setVisibility(View.VISIBLE); // we do this after load to prevent a flash of blank page.
             hasLoaded = true;
             hideTitle();
         }
@@ -163,21 +164,8 @@ public class MainActivity extends Activity implements RouterControls {
     }
 
     private void sentScreenShotToHost() {
-
-// new Thread(this::loadWebViewWithLocalClient).start();
         // experimental screen capture
         try {
-            // deprecated: use PixelCopy instead
-            //android.view.PixelCopy.request();
-            /*Bitmap b = webView.getDrawingCache();
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            b.compress(Bitmap.CompressFormat.PNG, 95, byteArrayOutputStream);
-
-            EmulatorHostCall.pushScreenShot(byteArrayOutputStream.toByteArray());
-
-            byteArrayOutputStream.close();*/
-
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Window w = this.getWindow();
                 View view = webView;
@@ -273,14 +261,14 @@ public class MainActivity extends Activity implements RouterControls {
         // It is small and lightweight on purpose.
         // Do any start-up in the loadWebViewWithLocalClient() method.
 
-        hasLoaded = false;
+        setTheme(R.style.AppTheme); // Enable use of the title bar
         this.setTitle("Loading..."); // temp message as soon as possible
+        hasLoaded = false;
 
         // Do any heavy lifting out on a non-ui thread, so
         // the 'loading' message gets a chance to update
         new Thread(this::loadWebViewWithLocalClient).start();
 
-        setTheme(R.style.AppTheme); // Hide the loading icon. Shouldn't be needed, but just for "correctness"
         super.onCreate(savedInstanceState);
     }
 
