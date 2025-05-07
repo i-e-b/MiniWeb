@@ -6,16 +6,16 @@ import java.util.Set;
 
 /**
  * Holder for current user permissions
- *
+ * <p>
  * Your app should call whatever services are required to populate
  * and update this list as required.
- *
+ * <p>
  * Permissions for the session are static, so if a user backgrounds
  * the app, the same permissions are held when the app is resumed.
- *
+ * <p>
  * Permissions are strings, which are matched exactly when
  * gating access.
- *
+ * <p>
  * Note that permissions should be quite fine-grained to work
  * well with view and control access. You might want to get
  * coarser 'roles' from log-in, and expand to permissions here.
@@ -29,7 +29,7 @@ public class Permissions {
      * This should be done when a user logs in or out,
      * or when re-synchronising permissions from an
      * external source.
-     *
+     * <p>
      * Any content that does not require permissions
      * will still be accessible after this call.
      */

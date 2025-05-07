@@ -10,11 +10,11 @@ import e.s.miniweb.core.MainActivity;
 
 /**
  * Manager for JavaScript calls.
- *
+ * <p>
  * The methods in this class annotated with @JavascriptInterface
  * will be available as functions in the global `manager` object
  * exposed to all page scripts.
- *
+ * <p>
  * You MUST add the @JavascriptInterface annotation to each method
  * otherwise they won't be exposed to JavaScript.
  */
@@ -32,7 +32,7 @@ public class JsCallbackManager extends CoreJsManager {
     /**
      * Example for extracting data from forms via JavaScript.
      * Look in "assets/views/test/paramsAndForms1.html" for its use.
-     *
+     * <p>
      * Feel free to remove or modify this for your app.
      *
      * @param formName storage key that uniquely identifies the data to be stored

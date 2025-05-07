@@ -5,10 +5,10 @@ import e.s.miniweb.core.ControllerBinding;
 
 /**
  * Controller bindings for the app.
- *
+ * <p>
  * Controllers do page selection and app logic for a set of related pages.
  * Most of your app code should be in the controllers.
- *
+ * <p>
  * You MUST add each controller class here, or it
  * will not be available in the app.
  */
@@ -16,7 +16,7 @@ public class ControllerBindings {
 
     /**
      * Add bindings for each of the app's controllers.
-     *
+     * <p>
      * You MUST add a line below once for each controller in the app.
      */
     public static void BindAllControllers(){

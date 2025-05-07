@@ -25,9 +25,9 @@ public interface RouterControls {
      * Does a 'hot reload' of the page the user is currently on.
      * This will NOT cause the controller action to be re-run,
      * but will re-run templating (so permission block visibility can change)
-     *
+     * <p>
      * If a hot reload is not possible, the page will NOT refresh.
-     *
+     * <p>
      * Returns 'true' if a hot reload was possible.
      * Returns 'false' if the page did not refresh
      */

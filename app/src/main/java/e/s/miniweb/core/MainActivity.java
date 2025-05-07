@@ -120,6 +120,7 @@ public class MainActivity extends Activity implements RouterControls {
         Looper.loop(); // leave this thread running to do background jobs.
     }
 
+    @SuppressLint("UseRequiresApi")
     @TargetApi(Build.VERSION_CODES.TIRAMISU)
     class TiramisuBackHandler implements OnBackInvokedCallback{
 

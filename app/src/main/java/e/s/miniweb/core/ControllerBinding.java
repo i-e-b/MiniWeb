@@ -16,7 +16,7 @@ public class ControllerBinding {
     /**
      *  Bind a method name to a controller function.
      *  This makes it available on url "app://{controllerName}/{methodName}"
-     *
+     * <p>
      *  This binding has no permissions requirement, and will be available regardless
      *  of session permissions.
      *
@@ -37,10 +37,10 @@ public class ControllerBinding {
     /**
      *  Bind a method name to a controller function.
      *  This makes it available on url "app://{controllerName}/{methodName}"
-     *
+     * <p>
      *  This binding includes requirements, and will only be available
      *  in sessions that have AT LEAST ONE of the listed permissions.
-     *
+     * <p>
      *  If the permission set is null or empty, the method will be open to all sessions
      *
      * @param controllerName name of the controller class that contains the method

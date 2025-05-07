@@ -1,10 +1,8 @@
 package e.s.miniweb.core;
 
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.util.Log;
-import android.view.PixelCopy;
 import android.webkit.SafeBrowsingResponse;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -13,7 +11,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.Stack;
@@ -217,7 +214,7 @@ public class AppWebRouter extends WebViewClient {
         String method = url.getPath();
         if (method == null) method = "";
         if (method.startsWith("/")) method = method.substring(1);
-        if (method.equals("")) method = "index";
+        if (method.isEmpty()) method = "index";
         String params = url.getQuery();
 
         // Check for 'expect hot reload' here
