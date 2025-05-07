@@ -4,6 +4,11 @@ plugins {
 android {
     compileSdk 33
 
+    buildFeatures {
+        buildConfig = true
+    }
+
+
     tasks.withType(JavaCompile) {
         configure(options) {
             options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked' // flag up potential issues
@@ -47,5 +52,10 @@ android {
         }
     }
     namespace 'e.s.miniweb'
+}
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
 }
 
