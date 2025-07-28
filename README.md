@@ -6,7 +6,7 @@ A small framework for building small android apps
 A simple set of drivers for the built-in Android WebView that provides
 a web-like development environment contained in a single app.
 
-The app uses as much Android system features as possible to result
+The app uses as much of the built-in Android system features as possible to result
 in a small final APK. The app plus example pages comes to around 50KB
 when built in release mode.
 
@@ -15,6 +15,7 @@ when built in release mode.
 - [ ] **Overlay** - Draw a new view over the current one. Clicking outside of the new view, or clicking 'back' reloads the original view without the overlay.
 - [ ] Implement something big (or at least non-trivial) in this. Add anything found to be missing
 - [ ] Hooks for 'wallet' service, hot code loading / live updates.
+- [ ] Action and progress controls -- template that replaces with a progress display and triggers a back-end task. Another replacement when task completes.
 
 ## How it works
 
@@ -121,6 +122,12 @@ using `View` > `Open in Browser` in the Android Studio main menu:
 MiniWeb supports "hot-reload" of pages and assets when running under an emulator
 (i.e. during development). You need to run the Emulator Host tool (`TinyWebHook`)
 or a similar compatible service.
+
+If you want to connect to the hot-reload service from a real device, you will need
+to have an active `adb` connection, and ensure port `1310` is 'reversed'.
+This can be done with `adb reverse --no-rebind tcp:1310 tcp:1310`.
+The `adb` tool is installed to `C:\Users\{user}\AppData\Local\Android\Sdk\platform-tools`
+if using Android Studio for Windows.
 
 The Emulator Host tool **must** be running when your app first starts, otherwise
 the hot-reload system will be disabled.

@@ -30,8 +30,8 @@ public class EmulatorHostCall {
     /** Time allowed for transferring data from emulator host */
     private static final int READ_TIME_MS = 2500;
 
-    // This is where we expect to find the host tool running
-    private static final String HOST_BASE = App.str(R.string.emu_host_url);
+    /** This is where we expect to find the host tool running. The app searches for this when 'hostIsAvailable' is first called. */
+    private static String HOST_BASE;
 
     // Status strings we expect from the host
     private static final String HOST_UP_MSG = App.str(R.string.emu_host_version);
@@ -43,11 +43,29 @@ public class EmulatorHostCall {
      * @return true if host responded. False otherwise
      */
     public static boolean hostIsAvailable(){
+        if (HOST_BASE == null){
+            if (canContactHost("http://127.0.0.1:1310/")) {
+                HOST_BASE = "http://127.0.0.1:1310/";
+                return true;
+            }
+            if (canContactHost("http://10.0.2.2:1310/")) {
+                HOST_BASE = "http://10.0.2.2:1310/";
+                return true;
+            }
+            HOST_BASE = "none";
+            return false;
+        }
+        if (HOST_BASE.equals("none")) return false; // failed to find host earlier
+
+        return canContactHost(HOST_BASE);
+    }
+
+    private static boolean canContactHost(String target){
         // This just shuts up a weird Android system warning
         TrafficStats.setThreadStatsTag(512);
 
         try {
-            URL url = new URL(HOST_BASE + App.str(R.string.emu_host_test_path));
+            URL url = new URL(target + App.str(R.string.emu_host_test_path));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             try {
                 // Set short time-out. The host server should respond in a few ms.

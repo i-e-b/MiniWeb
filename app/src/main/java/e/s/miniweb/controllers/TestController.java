@@ -1,5 +1,7 @@
 package e.s.miniweb.controllers;
 
+import android.os.Looper;
+import android.util.Log;
 import android.webkit.WebResourceRequest;
 
 import java.text.SimpleDateFormat;
@@ -62,6 +64,12 @@ public class TestController extends ControllerBase {
      * can split them by setting an 'action' on the html form tag.
      */
     private TemplateResponse paramsAndForms(Map<String, String> params, WebResourceRequest request) {
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            // Current thread is the UI/Main thread
+            Log.e("Test", "Fault! Callback thread IS main loop!");
+        } else {
+            Log.w("Test", "Callback thread is not main loop");
+        }
         if (params.containsKey("isPostback")) { // got form values
 
             // Note that because we are a 1 user site, we can use class fields, unlike traditional web servers.
@@ -100,6 +108,12 @@ public class TestController extends ControllerBase {
         Object model = new Object(){
             public final String Name = JsCallbackManager.formData.get("demoForm");
         };
+        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
+            // Current thread is the UI/Main thread
+            Log.e("Test", "Fault! Callback thread IS main loop!");
+        } else {
+            Log.w("Test", "Callback thread is not main loop");
+        }
         return Page("test/paramsAndForms3", model);
     }
 
