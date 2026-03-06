@@ -23,13 +23,14 @@ import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
 import e.s.miniweb.core.hotReload.AssetLoader;
 
+/** Takes template documents, external fragments, and parameters to generate a single output document  */
 public class TemplateEngine {
     private static final String TAG = "TemplateEngine";
     private final AssetLoader assets;
     private final AppWebRouter router;
 
     public TemplateEngine(AssetLoader assets, AppWebRouter router) {
-        // Note: Java's reflection is so crap we can't pre-load class info in
+        // Note: Java's reflection is so crap we can't preload class info in
         // a meaningful way. So we wait until we get a call, and figure it out from there.
         this.assets = assets;
         this.router = router;
@@ -192,7 +193,7 @@ public class TemplateEngine {
         //   #.x.y       -->  item.x.y
 
         // Content or recursion?
-        if (!node.isUnderscored && node.children.size() < 1) {
+        if (!node.isUnderscored && node.children.isEmpty()) {
             // not a container. Slap in contents
             page.addRange(node.Src, node.srcStart, node.srcEnd + 1);
         } else {
@@ -230,7 +231,7 @@ public class TemplateEngine {
                             boolean b = (boolean) items;
                             if (b) {
                                 lastBlockWasHidden = false;
-                                for (HNode child : node.children) recurseTemplate(child, page, items, model);
+                                for (HNode child : node.children) recurseTemplate(child, page, true, model);
                             }
                         } else if (items != null) { // something else. Show if not null{
                             lastBlockWasHidden = false;
@@ -278,7 +279,7 @@ public class TemplateEngine {
         }
     }
 
-    /** take "<_>", "<_for thing>" etc, and split into parts. Array is always at least 1 element, never null */
+    /** take "<_>", "<_for thing>" etc., and split into parts. Array is always at least 1 element, never null */
     private static String decomposeTag(PageOut page, String tag, Map<String, String> attributes) {
         int i = 1;
         int end = tag.length()-1;
@@ -288,6 +289,7 @@ public class TemplateEngine {
         for (; i < end; i++){
             char c = tag.charAt(i);
             if (c == ' ') break;
+            if (c == '>') break;
             page.tagAdd(c);
         }
         String tagOut = page.tagStr();
@@ -304,6 +306,7 @@ public class TemplateEngine {
                 hasValue = false;
                 page.resetTag();
             } else {
+                if (c == '>') break;
                 if (hasValue) page.valueAdd(c);
                 else page.keyAdd(c);
             }
@@ -431,7 +434,7 @@ public class TemplateEngine {
     private static Object getViewModelObjectByPath(Object model, Object cursorItem, Map<String, String> params) {
         if (params.containsKey("model")) {
             String modelPath = params.get("model");
-            if (modelPath == null || modelPath.equals("")) {
+            if (modelPath == null || modelPath.isEmpty()) {
                 Log.w(TAG, "invalid view block: empty model.");
                 return null;
             } else if (modelPath.startsWith("model")) { // looks like a page model reference
@@ -513,7 +516,7 @@ public class TemplateEngine {
      */
     @SuppressWarnings("rawtypes")
     private static Object getIterableIndexed(Object src, int idx) {
-        // coding in Java feels more old fashioned than C.
+        // coding in Java feels more old-fashioned than C.
         try {
             if (src == null || idx < 0) return null;
             Iterable items = (Iterable) src;
@@ -530,7 +533,7 @@ public class TemplateEngine {
     }
 
     /**
-     * Returns true if the string contains only ascii numbers
+     * Returns true if the string contains only ASCII numbers
      */
     private static boolean looksLikeInt(String str) {
         for (int i = 0; i < str.length(); i++) {
@@ -549,7 +552,7 @@ public class TemplateEngine {
             if (model == null) return null;
             if (name == null) return null;
 
-            if (name.equals("")) return model; // special case <_for> -> use the model directly
+            if (name.isEmpty()) return model; // special case <_for> -> use the model directly
 
             return searchForField(model, name);
         } catch (NoSuchFieldException | IllegalAccessException ignore) {
@@ -566,7 +569,7 @@ public class TemplateEngine {
             if (model == null) return "";
             if (name == null) return "";
 
-            if (name.equals("")) { // special case: <_></_> : output the model as a string
+            if (name.isEmpty()) { // special case: <_></_> : output the model as a string
                 return model.toString();
             }
 
@@ -626,7 +629,7 @@ public class TemplateEngine {
                 br.close();
                 is = null;
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e(TAG, "Failed to read template", e);
             }
         } finally {
             if (is != null) is.close();
@@ -639,9 +642,9 @@ public class TemplateEngine {
     private Map<String, String> mapParams(String params) {
         Map<String, String> result = new HashMap<>();
         if (params == null) return result;
-        String[] parts = params.split("([&]|[?])");
+        String[] parts = params.split("(&|[?])");
         for (String part : parts) {
-            if (part == null || part.equals("")) continue;
+            if (part == null || part.isEmpty()) continue;
             String[] sides = part.split("=", 2);
 
             if (sides.length == 1) result.put(sides[0], sides[0]);
