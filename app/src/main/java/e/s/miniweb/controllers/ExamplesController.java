@@ -1,7 +1,5 @@
 package e.s.miniweb.controllers;
 
-import android.webkit.WebResourceRequest;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +7,7 @@ import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.template.TemplateResponse;
 import e.s.miniweb.models.NestedObjectModel;
 @SuppressWarnings("unused")
@@ -29,20 +28,20 @@ public class ExamplesController extends ControllerBase {
         ControllerBinding.BindMethod(controller, "element-view", this::urlPartialElementView);
     }
 
-    private TemplateResponse isPermitted(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse isPermitted(Map<String, String> params, ResourceRequest request) {
         return Page("examples/permitted-ok", null);
     }
 
     // this controller-action will only run if the user has at least one of these permissions:
-    private TemplateResponse notPermitted(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse notPermitted(Map<String, String> params, ResourceRequest request) {
         return Page("examples/permitted-ok", null);
     }
 
-    private TemplateResponse urlPartialElementView(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse urlPartialElementView(Map<String, String> params, ResourceRequest request) {
         return Page("examples/element-view", params);
     }
 
-    private TemplateResponse urlPartialView(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse urlPartialView(Map<String, String> params, ResourceRequest request) {
         Object model = new Object() {
             public final String text = params.containsKey("text") ? params.get("text") : null;
             public final String text2 = params.containsKey("text2") ? params.get("text2") : null;
@@ -52,7 +51,7 @@ public class ExamplesController extends ControllerBase {
     }
 
 
-    private TemplateResponse partialViews(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse partialViews(Map<String, String> params, ResourceRequest request) {
 
         List<ExamplesController.ExampleObject> list = new ArrayList<>();
         list.add(new ExamplesController.ExampleObject("hello"));
@@ -74,14 +73,14 @@ public class ExamplesController extends ControllerBase {
         return Page("examples/partial-views", model);
     }
 
-    private TemplateResponse permissionVisibility(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse permissionVisibility(Map<String, String> params, ResourceRequest request) {
         return Page("examples/permission-visibility", null);
     }
 
     /**
      * Demo page with loads of templating examples
      */
-    private TemplateResponse templatingExamples(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse templatingExamples(Map<String, String> params, ResourceRequest request) {
         List<ExamplesController.ExampleObject> list = new ArrayList<>();
         list.add(new ExamplesController.ExampleObject("hello"));
         list.add(new ExamplesController.ExampleObject("this"));

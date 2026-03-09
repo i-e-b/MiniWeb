@@ -2,7 +2,7 @@
 <html lang="en-US">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="refresh" content="0; url={{RedirectUrl}}">
+    <meta http-equiv="refresh" content="0; url=_$RedirectUrl$_">
     <_for ShouldClearHistory>
         <script type="text/javascript">
         manager.clearHistory();
@@ -10,11 +10,11 @@
         </script>
     </_for>
     <script type="text/javascript">
-        window.location.href = "{{RedirectUrl}}";
+        window.location.href = "_$RedirectUrl_$";
     </script>
     <title>Page Redirection</title>
 </head>
 <body>
-If you are not redirected automatically, <a href="{{RedirectUrl}}">follow this link</a>.
+If you are not redirected automatically, <a href="_$RedirectUrl$_">follow this link</a>.
 </body>
 </html>

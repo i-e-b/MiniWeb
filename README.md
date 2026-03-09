@@ -65,7 +65,7 @@ Note: the field name used with a template hole is case sensitive, and must be a 
 not a function or method.
 
 For injection in other HTML tags and attributes, and for injecting into `<script>` tags,
-you can use <code>`{{`modelField`}}`</code>. This only does simple replacements, and can't
+you can use <code>`_$`modelField`$_`</code>. This only does simple replacements, and can't
 do any logic, repetition, or sub-views.
 
 ### Complex values

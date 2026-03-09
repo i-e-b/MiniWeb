@@ -21,6 +21,7 @@ import e.s.miniweb.R;
 import e.s.miniweb.core.App;
 import e.s.miniweb.core.AppWebRouter;
 import e.s.miniweb.core.Permissions;
+import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.hotReload.AssetLoader;
 
 /** Takes template documents, external fragments, and parameters to generate a single output document  */
@@ -40,9 +41,11 @@ public class TemplateEngine {
      * Call out to the controller, get a template and model object.
      * Fill out template, then return the resulting document as a string.
      */
-    public TemplateResponse Run(WebMethod controllerAction, String params, WebResourceRequest request) throws Exception {
+    public TemplateResponse Run(WebMethod controllerAction, String params, WebResourceRequest webRequest) throws Exception {
         // 'Do' the page action.
         // This results in a template and the data to go with it
+
+        ResourceRequest request = ResourceRequest.fromWebRequest(webRequest);
         TemplateResponse tmpl = getDocTemplate(request, params, controllerAction);
 
         if (tmpl.RedirectUrl != null) {
@@ -141,20 +144,20 @@ public class TemplateEngine {
         return pageOut.output();
     }
 
-    /** Replace '{{ var name }}' templates */
+    /** Replace '_$ var name $_' templates */
     private String moustacheReplace(Object model, String line) {
         // Hopefully the most common: do nothing.
-        if (!line.contains("{{") || !line.contains("}}")) return line;
+        if (!line.contains("_$") || !line.contains("$_")) return line;
 
         // scan through the line, replacing as we go
         StringBuilder sb = new StringBuilder();
         int left = 0;
         int end = line.length() - 1;
         while (left < end){
-            int next = line.indexOf("{{", left);
+            int next = line.indexOf("_$", left);
             if (next < 0) break;
 
-            int term = line.indexOf("}}", left);
+            int term = line.indexOf("$_", left);
             if (term < next) {
                 sb.append(line.substring(left, term+2));
                 left = term + 2;
@@ -585,7 +588,7 @@ public class TemplateEngine {
     /**
      * Generate and populate a TemplateResponse for the given web request
      */
-    private TemplateResponse getDocTemplate(WebResourceRequest request, String params, WebMethod controllerMethod) throws Exception {
+    private TemplateResponse getDocTemplate(ResourceRequest request, String params, WebMethod controllerMethod) throws Exception {
 
         // This is the call to the controller method:
         TemplateResponse resp = controllerMethod.RunControllerMethod(mapParams(params), request);

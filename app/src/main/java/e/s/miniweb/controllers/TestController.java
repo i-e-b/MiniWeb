@@ -2,7 +2,6 @@ package e.s.miniweb.controllers;
 
 import android.os.Looper;
 import android.util.Log;
-import android.webkit.WebResourceRequest;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -12,6 +11,7 @@ import java.util.Map;
 import e.s.miniweb.JsCallbackManager;
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 import e.s.miniweb.core.template.TemplateResponse;
@@ -63,7 +63,7 @@ public class TestController extends ControllerBase {
      * In this method we handle both the GET and the (fake) POST. You
      * can split them by setting an 'action' on the html form tag.
      */
-    private TemplateResponse paramsAndForms(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse paramsAndForms(Map<String, String> params, ResourceRequest request) {
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
             // Current thread is the UI/Main thread
             Log.e("Test", "Fault! Callback thread IS main loop!");
@@ -88,14 +88,14 @@ public class TestController extends ControllerBase {
     }
 
     // this method only expects the post-back from a form
-    private TemplateResponse paramsAndForms2(Map<String, String> data, WebResourceRequest request) {
+    private TemplateResponse paramsAndForms2(Map<String, String> data, ResourceRequest request) {
         lastName = data.get("name");
         lastSurname = data.get("surname");
         return Redirect("app://test/paramsAndForms3");
     }
 
     // Shows the result from the form
-    private TemplateResponse paramsAndForms3(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse paramsAndForms3(Map<String, String> params, ResourceRequest request) {
         Object model = new Object(){
             public final String Name = lastName;
             public final String Surname = lastSurname;
@@ -104,7 +104,7 @@ public class TestController extends ControllerBase {
     }
 
     // this one gets the data from JavaScript
-    private TemplateResponse paramsAndForms4(Map<String, String> parameters, WebResourceRequest request) {
+    private TemplateResponse paramsAndForms4(Map<String, String> parameters, ResourceRequest request) {
         Object model = new Object(){
             public final String Name = JsCallbackManager.formData.get("demoForm");
         };
@@ -118,7 +118,7 @@ public class TestController extends ControllerBase {
     }
 
 
-    private TemplateResponse memInfo(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse memInfo(Map<String, String> params, ResourceRequest request) {
         final Runtime runtime = Runtime.getRuntime();
         final long usedMemInMB=(runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
         final long maxHeapSizeInMB=runtime.maxMemory() / 1048576L;
@@ -136,7 +136,7 @@ public class TestController extends ControllerBase {
     /**
      * Display a page that proves hot-load is working
      */
-    private TemplateResponse incrementPage(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse incrementPage(Map<String, String> params, ResourceRequest request) {
 
         loadCount++;
 
@@ -150,7 +150,7 @@ public class TestController extends ControllerBase {
     /**
      * Display a page showing emulator-host stats
      */
-    private TemplateResponse emulatorAndHostTests(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse emulatorAndHostTests(Map<String, String> params, ResourceRequest request) {
         Object model = new Object(){
             public final String IsConnected = EmulatorHostCall.hostIsAvailable() ? "connected" : "not available";
             public final String HotReloadRunning = HotReloadMonitor.TryLoadFromHost ? "running" : "off";
@@ -176,31 +176,31 @@ public class TestController extends ControllerBase {
     /**
      * Display a reference page full of emoji supported by Android
      */
-    private TemplateResponse emoji(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse emoji(Map<String, String> params, ResourceRequest request) {
         return Page("test/emoji", null);
     }
 
 
     /** Show a globe, with a shield, and 'value' from params in that shield. */
-    private TemplateResponse badgeAfrica(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse badgeAfrica(Map<String, String> params, ResourceRequest request) {
         return Page("test/badge-africa", params);
     }
 
     /**
      * Display a page that loads an `img` tag with SVG source
      */
-    private TemplateResponse svgEmbed(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse svgEmbed(Map<String, String> params, ResourceRequest request) {
         return Page("test/svg-embed", null);
     }
 
     /**
      * Demonstrate what happens when a web method crashes
      */
-    private TemplateResponse badMethod(Map<String, String> parameter, WebResourceRequest request) throws Exception {
+    private TemplateResponse badMethod(Map<String, String> parameter, ResourceRequest request) throws Exception {
         throw new Exception("This is an example crash!");
     }
 
-    private TemplateResponse badInput(Map<String, String> params, WebResourceRequest request) {
+    private TemplateResponse badInput(Map<String, String> params, ResourceRequest request) {
         return Page("test/badInput", new Object());
     }
 
@@ -209,7 +209,7 @@ public class TestController extends ControllerBase {
      * Demo page. Delete as required
      * Demonstrates the 'get out of jail free card' that is the Android back button.
      */
-    private TemplateResponse testOne(Map<String, String> parameters, WebResourceRequest request) {
+    private TemplateResponse testOne(Map<String, String> parameters, ResourceRequest request) {
         Object model = new Object() {
             public final String time = new Date().toString();
         };
@@ -222,7 +222,7 @@ public class TestController extends ControllerBase {
      * Demo page. Delete as required
      * Demonstrates how to do a redirect
      */
-    private TemplateResponse testTwo(Map<String, String> parameters, WebResourceRequest request) {
+    private TemplateResponse testTwo(Map<String, String> parameters, ResourceRequest request) {
 
         if (parameters.containsKey("first")) {
             // There is no requirement to have views and controllers line up BUT it is a good idea.

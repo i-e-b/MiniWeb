@@ -1,10 +1,10 @@
 package e.s.miniweb.core.template;
 
-import android.webkit.WebResourceRequest;
-
 import java.util.Map;
+
+import e.s.miniweb.core.ResourceRequest;
 
 @FunctionalInterface
 public interface WebMethod {
-    TemplateResponse RunControllerMethod(Map<String, String> parameters, WebResourceRequest request) throws Exception;
+    TemplateResponse RunControllerMethod(Map<String, String> parameters, ResourceRequest request) throws Exception;
 }

@@ -109,15 +109,17 @@
 <h2>Templating in HTML and Scripts</h2>
 <p>
     If you need to inject a model value into a script or
-    <!-- if you're looking at the code, it's '{{' and '}}' -->
-    a HTML attribute, you can use 'moustaches':<br/><code>{&ZeroWidthSpace;{</code> and <code>}&ZeroWidthSpace;}</code>
+    <!-- if you're looking at the code,
+    it's '_$'
+    and '$_' -->
+    a HTML attribute, you can use 'moustaches':<br/><code>_&ZeroWidthSpace;$</code> and <code>$&ZeroWidthSpace;_</code>
 </p>
 <p>
     The result of this kind of injection is the same as using normal templates:
-    <_>listThing.0.text</_> <i>vs.</i> {{listThing.0.text}}
+    <_>listThing.0.text</_> <i>vs.</i> _$listThing.0.text$_
 </p>
 <p>
     However, the moustache style replacements happen <b>before</b> the template is
     parsed, so they can be put anywhere, including within HTML template tags:
-    <_view url="app://examples/url-view?text=Like%20{{listThing.1.text}}"></_view>
+    <_view url="app://examples/url-view?text=Like%20_$listThing.1.text$_"></_view>
 </p>
