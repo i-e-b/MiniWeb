@@ -40,6 +40,7 @@
         <EmbeddedResource Include="images\*"/>
         <EmbeddedResource Include="images\ewc_leds\*"/>
         <EmbeddedResource Include="images\components\*"/>
+        <EmbeddedResource Include="pages\home\index.html" />
         <EmbeddedResource Include="video\*"/>
         <EmbeddedResource Include="pages\*"/>
         <EmbeddedResource Include="styles\*"/>

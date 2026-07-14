@@ -81,7 +81,11 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
     {
         var customSchemeRegistrations = new List<CoreWebView2CustomSchemeRegistration>
         {
-            new("app") // files embedded in the app
+            new("app") // files embedded in the app, or controller responses
+            {
+                TreatAsSecure = true, HasAuthorityComponent = false, AllowedOrigins = ["*"]
+            },
+            new("asset") // files embedded in the app
             {
                 TreatAsSecure = true, HasAuthorityComponent = false, AllowedOrigins = ["*"]
             },
@@ -136,6 +140,7 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
         Core.NewWindowRequested += RequestedNewWindow;
 
         Core.AddWebResourceRequestedFilter("app://*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+        Core.AddWebResourceRequestedFilter("asset://*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
         Core.AddWebResourceRequestedFilter("https://*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
 
         if (FirstHost is null)
@@ -300,7 +305,7 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
         {
             e.Response = RawFile("<?xml version=\"1.0\" encoding=\"UTF-8\"?><svg version=\"1.1\" viewBox=\"0 0 48 48\"\nxmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"24\" cy=\"24\" r=\"18\" fill=\"#5b86bf\"/></svg>"u8.ToArray() , "image/svg+xml");
         }
-        else if (url.StartsWith("app://"))
+        else if (url.StartsWith("app://")) // Files, controllers, templates, etc
         {
             var rsrc = url.Replace("app://", "");
             var mime = GuessMime(rsrc);
@@ -347,6 +352,12 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
             // Fall-back to plain embedded file
             e.Response = EmbeddedFile(rsrc, mime);
         }
+        else if (url.StartsWith("asset://")) // Only raw embedded files
+        {
+            var rsrc = url.Replace("asset://", "");
+            var mime = GuessMime(rsrc);
+            e.Response = EmbeddedFile(rsrc, mime);
+        }
         else
         {
             e.Response = FileNotFound();
@@ -372,7 +383,7 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
              <html lang="en">
              <head>
                  <title>Error</title>
-                 <link rel="stylesheet" href="app://styles/default.css" type="text/css">
+                 <link rel="stylesheet" href="asset://styles/default.css" type="text/css">
              </head>
              <body>
              <h1>ERROR</h1>
@@ -494,7 +505,47 @@ public class Host : IAssetLoader, IPermissionsCheck, INetworkRequest
         var result = _template.Render(content, model);
         if (!result.Success || result.Result is null) return FileNotFound();
 
+        // Unless page looks like it has its own headers, wrap the result in a standard page container
+        // This links in default styles and scripts.
+        if (!result.Result.StartsWith("<!doctype") && !result.Result.StartsWith("<html"))
+        {
+            result.Result = WrapPageStringWithHtmlHeaders(result);
+        }
+
         return RawFile(Encoding.UTF8.GetBytes(result.Result), mime);
+    }
+
+    /// <summary>
+    /// Wrap page result in standard HTML header and footer. This links in default styles and scripts.
+    /// </summary>
+    private string WrapPageStringWithHtmlHeaders(TemplateResponse result)
+    {
+        var sb = new StringBuilder();
+
+        sb.Append("<!doctype html><html><head><meta charset=\"UTF-8\">"); // document with header and char set.
+        sb.Append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />"); // makes styling consistent
+        sb.Append("<link rel=\"stylesheet\" href=\"asset://styles/default.css\" type=\"text/css\">"); // default styles for both light & dark
+
+        // Add specific dark or light mode styles
+        sb.Append("<link rel=\"stylesheet\" href=\"asset://styles/");
+
+        if (_window.InDarkMode()){
+            sb.Append("default-dark.css");
+        } else {
+            sb.Append("default-light.css");
+        }
+        sb.Append("\" type=\"text/css\">");
+
+        // Add default script
+        sb.Append("<script type=\"text/javascript\" src=\"asset://scripts/common.js\"></script>");
+
+        // Add page content
+        sb.Append("</head><body>");
+        sb.Append(result.Result);
+        sb.Append("</body></html>");
+
+
+        return sb.ToString();
     }
 
     /// <inheritdoc />

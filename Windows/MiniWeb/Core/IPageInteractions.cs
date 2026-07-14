@@ -6,7 +6,7 @@
 public interface IPageInteractions
 {
     /// <summary>
-    /// Handle calls from Javascript through <c>window.chrome.webview.postMessage</c>.
+    /// Handle calls from Javascript through <c>PageRequest</c>.
     /// Return <c>true</c> if you handle the request, or <c>false</c> to fall through to the default handler.
     /// </summary>
     public Task<bool> HandlePageRequest(Host host, string jsonStr);

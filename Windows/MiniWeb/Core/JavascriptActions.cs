@@ -6,13 +6,13 @@ using SkinnyJson;
 namespace MiniWeb.Core;
 
 /// <summary>
-/// Handle calls from Javascript through <c>window.chrome.webview.postMessage</c>
+/// Handle calls from Javascript through <c>PageRequest</c>
 /// </summary>
 public static class JavascriptActions
 {
 
     /// <summary>
-    /// Handle calls from Javascript through <c>window.chrome.webview.postMessage</c>
+    /// Handle calls from Javascript through <c>PageRequest</c>
     /// </summary>
     /// <param name="core">WebView2 core</param>
     /// <param name="jsonStr">JSON data sent from web page</param>

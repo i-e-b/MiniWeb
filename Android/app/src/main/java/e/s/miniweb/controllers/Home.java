@@ -1,9 +1,13 @@
 package e.s.miniweb.controllers;
 
+import org.json.JSONObject;
+
 import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.Host;
+import e.s.miniweb.core.PageInteractions;
 import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.template.TemplateResponse;
 
@@ -22,7 +26,7 @@ import e.s.miniweb.core.template.TemplateResponse;
  */
 
 @SuppressWarnings("unused")
-public class Home extends ControllerBase {
+public class Home extends ControllerBase implements PageInteractions {
     /**
      * The constructor of your controller should bind all it's routes.
      * The constructor should be called in ControllerBindings::BindAllControllers()
@@ -38,6 +42,16 @@ public class Home extends ControllerBase {
      */
     public TemplateResponse index(Map<String, String> parameters, ResourceRequest request) {
         // viewPath is required, but model is optional.
-        return Page("home/index", null);
+        return Page("home/index", this, null);
+    }
+
+    @Override
+    public boolean HandlePageRequest(Host host, JSONObject message) {
+        return false;
+    }
+
+    @Override
+    public void PageClosed(Host host) {
+
     }
 }

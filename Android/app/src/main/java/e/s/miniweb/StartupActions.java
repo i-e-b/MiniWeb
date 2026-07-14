@@ -3,7 +3,7 @@ package e.s.miniweb;
 import android.util.Log;
 
 import e.s.miniweb.core.Permissions;
-import e.s.miniweb.core.RouterControls;
+import e.s.miniweb.core.Host;
 
 /**
  * These methods are called as the app is starting up.
@@ -37,7 +37,7 @@ public class StartupActions {
      * and will not prevent the user from interacting
      * with the app, including changing page.
      */
-    public static void afterHomepage(RouterControls controls){
+    public static void afterHomepage(Host controls){
 
 
         // Demo of a way to do 'late loading' of user account.

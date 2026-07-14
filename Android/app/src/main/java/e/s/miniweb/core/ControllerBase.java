@@ -4,12 +4,13 @@ import e.s.miniweb.core.template.TemplateResponse;
 
 public class ControllerBase {
     /**
-     * Generate a model/template html view
-     * @param viewPath path under the assets/views folder to the .html template (e.g. "home/index")
-     * @param model an object that will be used to fill the template
+     * Generate a model/template HTML view
+     * @param viewPath path under the assets/pages folder to the .html template (e.g. "home/index")
+     * @param interactionTarget [Optional] handler for Javascript calls to `PageRequest()`
+     * @param model [Optional] an object that will be used to fill the template
      * @return data that will be used to render the page.
      */
-    public TemplateResponse Page(String viewPath, Object model){
+    public TemplateResponse Page(String viewPath, PageInteractions interactionTarget, Object model){
         TemplateResponse resp = new TemplateResponse();
 
         // just in case someone put the file ending on, we take it back off.
@@ -17,6 +18,7 @@ public class ControllerBase {
 
         resp.TemplatePath = viewPath;
         resp.Model = model;
+        resp.CallbackTarget = interactionTarget;
 
         return resp;
     }

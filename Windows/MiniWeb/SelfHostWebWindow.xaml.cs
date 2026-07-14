@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Microsoft.Win32;
 using MiniWeb.Core;
 
 namespace MiniWeb;
@@ -102,5 +103,27 @@ public partial class SelfHostWebWindow : Window
                 MessageBox.Show(message, header);
             }
         });
+    }
+
+    private const string RegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize";
+    private const string RegistryValueName = "AppsUseLightTheme";
+
+    /// <summary>
+    /// Detect if user has a dark-mode theme
+    /// </summary>
+    public bool InDarkMode()
+    {
+        const bool dark  = true;
+        const bool light = false;
+
+        using var key = Registry.CurrentUser.OpenSubKey(RegistryKeyPath);
+
+        var registryValueObject = key?.GetValue(RegistryValueName);
+        if (registryValueObject == null) return light;
+
+        var registryValue = (int)registryValueObject;
+
+        // ReSharper disable once SimplifyConditionalTernaryExpression
+        return registryValue > 0 ? light : dark;
     }
 }

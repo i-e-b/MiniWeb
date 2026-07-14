@@ -1,0 +1,59 @@
+<h1>Forms</h1>
+<p>
+    These will be pre-filled with the URL's parameters if provided. See the controller method.
+    Forms are somewhat limited in Android WebView. See the source of this page for different
+    ways to work around the issues.
+</p>
+<p>NOTE: <tt>&lt;form method=&quot;post&quot; ...</tt> will not work. This is a problem with Android WebView</p>
+
+<!-- sending back to the same url as the page -->
+<form method="get">
+    <!-- We add a hidden value as a marker in the form data.
+         This lets us detect in the controller method if we're handling a submit. -->
+    <input type="hidden" name="isPostback" value="true"/>
+
+    <input type="text" value="_$Name$_" name="name" alt="Enter your name"/><br/>
+    <input type="text" value="_$Surname$_" name="surname" alt="Enter your surname"/>
+    <input type="submit" value="Send"/>
+</form>
+
+<p>
+    You can have more than one form on a page...
+</p>
+
+<!-- Sending back to a DIFFERENT url to the page
+     This is generally cleaner, but requires more controller methods -->
+<form method="get" action="app://test/paramsAndForms2">
+    <input type="text" value="_$Name$_" name="name"
+           placeholder="Enter your name" title="Enter your name" alt="Enter your name"/><br/>
+    <input type="text" value="_$Surname$_" name="surname"
+           placeholder="Enter your surname" title="Enter your surname" alt="Enter your surname"/>
+    <input type="submit" value="Send"/>
+</form>
+
+<p>
+    This form uses JavaScript to package the data
+</p>
+
+<!-- Sending using JavaScript -->
+<form id="jsForm" action="app://test/paramsAndForms4" onsubmit="demoSubmitScript()">
+    <input type="text" value="_$Name$_" name="name" alt="Enter your name"/><br/>
+    <input type="text" value="_$Surname$_" name="surname" alt="Enter your surname"/>
+    <input type="submit" value="Send"/>
+</form>
+
+<script>
+    function demoSubmitScript(){
+        alert('Processing...');
+
+        var input = document.getElementById('jsForm').elements;
+
+        var result = {
+            name: input['name'].value,
+            surname: input['surname'].value
+        };
+
+        // send data to the app
+        manager.storeForm("demoForm", JSON.stringify(result));
+    }
+</script>

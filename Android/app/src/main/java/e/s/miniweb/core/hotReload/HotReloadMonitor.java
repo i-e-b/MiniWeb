@@ -50,7 +50,7 @@ public class HotReloadMonitor {
             return;
         }
 
-        String key = App.str(R.string.path_views) + tmpl.TemplatePath + ".html";
+        String key = App.str(R.string.path_pages) + tmpl.TemplatePath + ".html";
         // see also: e.s.miniweb.core.template.TemplateEngine#getDocTemplate
 
         if (hotReloadAssets.containsKey(key)) return;
@@ -103,7 +103,7 @@ public class HotReloadMonitor {
     /** Just do the render phase of `Run` */
     public static String RunHotReload(TemplateEngine template) {
         try {
-            template.copyLinesToTemplate(App.str(R.string.path_views) + lastPageRendered.TemplatePath + ".html", lastPageRendered);
+            template.copyLinesToTemplate(App.str(R.string.path_pages) + lastPageRendered.TemplatePath + ".html", lastPageRendered);
             return template.transformTemplate(lastPageRendered, null);
         } catch (Exception ex){
             Log.e(TAG, "Hot reload failed: "+ex);

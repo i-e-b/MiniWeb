@@ -1,14 +1,14 @@
 <h1>🚧 Hello, world! 🚧</h1>
 <p>This is the home page for your MiniWeb app.
 
-<small>
-    <_needs no-permissions-loaded>
-        <br/>Loading user permissions...
-    </_needs>
-    <_else>
-        👍
-    </_else>
-</small>
+    <small>
+        <_needs no-permissions-loaded>
+            <br/>Loading user permissions...
+        </_needs>
+        <_else>
+            👍
+        </_else>
+    </small>
 </p>
 
 <h4>Tour</h4>
@@ -36,8 +36,7 @@
          `manager.showTitle()` call instead -->
     <li><a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
 
-    <!-- See core.JsCallbackManager for `showTitle` call -->
-    <li><a href="javascript:manager.showTitle('Important message!','#9D0F58')">Run Android code</a><br/>
+    <li><a href="javascript:PageRequest({action:'show-title', params:['Important message!','#9D0F58']})">Run Android code</a><br/>
         (in this case, show a prominent message)</li>
 
     <li style="list-style-type:none">&nbsp;</li>
@@ -65,5 +64,5 @@
 </ul>
 
 <script type="text/javascript">
-    manager.clearHistory(); // this clears the 'back' list any time you hit the home page. Feel free to remove it
+    PageRequest({action: "clear-history"}); // this clears the 'back' list any time you hit the home page. Feel free to remove it
 </script>

@@ -358,7 +358,7 @@ public class TemplateEngine {
         Object viewModel = getViewModelObjectByPath(model, cursorItem, params);
 
         // Try to load the view into a new template
-        String viewPath = App.str(R.string.path_views) + params.get("path");
+        String viewPath = App.str(R.string.path_pages) + params.get("path");
         try {
             TemplateResponse viewTmpl = new TemplateResponse();
             viewTmpl.TemplateLines = new ArrayList<>();
@@ -597,7 +597,7 @@ public class TemplateEngine {
         if (resp.RedirectUrl != null) return resp;
 
         resp.TemplateLines = new ArrayList<>();
-        copyLinesToTemplate(App.str(R.string.path_views) + resp.TemplatePath + ".html", resp);
+        copyLinesToTemplate(App.str(R.string.path_pages) + resp.TemplatePath + ".html", resp);
 
         return resp;
     }

@@ -1,0 +1,82 @@
+<h1>Permission Visibility</h1>
+<a href="app://home">Home</a>
+<p>
+    The template engine can hide or show blocks of HTML based on
+    the permissions of the current session.
+</p>
+<p>
+    Look at the HTML and output together to see how this works.
+</p>
+<h2>Gate content with permissions</h2>
+<p>
+    You can gate parts of a view
+    <_needs perm1 perm2>to specific permissions</_needs>
+    while exposing others to any user.
+
+    The items gated by a permission can be
+    <_needs perm1 perm2>
+
+        <a href="app://home" class="small-link">links</a> and other HTML,
+
+        <!-- needs blocks can be nested -->
+        <_needs perm1>
+            <br/>Or partial views:
+            <_view url="app://examples/url-view?text=You%20have%20permission%20one"></_view>
+        </_needs>
+    </_needs>
+</p>
+<p>
+    If you don't have a given permission,
+    <_needs not-a-real-permission>
+        <b>################# WAGGA! GABBA! BOGGO! Ha-ha, you can't see me! #################</b>
+    </_needs>
+    the HTML is continued <i>without</i> the gated content, and without inserting any other mark-up;
+    so be sure to check your page <b>with and without</b> each set of permissions.
+</p>
+
+<h2>Gate pages with permissions</h2>
+<p>
+    Individual controllers can have permission gates added using
+    <code>ControllerBinding.BindMethod(_, _, _, &quot;my, permission, list&quot;);</code>.
+    Even if there is a mistake in the page, and the user is presented with a link
+    they shouldn't have access to -- if the controller is gated, the link won't work.
+</p>
+<p>
+    Not permitted: <a href="app://examples/not-permitted">Press here</a> - You should see an error screen
+</p>
+<p>
+    <!-- This is "the right way" to do a restricted link -->
+    <_needs perm1 perm2>
+    Permitted: <a href="app://examples/is-permitted">Press here</a> - You should see the page
+    </_needs>
+</p>
+<p>
+    It's a good idea to use both <code>&lt;_needs ...&gt;</code> blocks and <code>BindMethod/4</code>
+    restrictions together.
+</p>
+
+<h2>Alternatives</h2>
+<p>
+    <code>&lt;_needs ...&gt;</code> blocks can be followed by an <code>&lt;_else ...&gt;</code> block.
+    If the <code>&lt;_needs ...&gt;</code> block is not shown, then the <code>&lt;_else ...&gt;</code> block
+    is displayed.
+</p>
+<p>
+    <_needs not-a-real-permission>
+        #### YOU SHOULD NOT SEE THIS ####
+    </_needs>
+    <_else>
+        The 'needs' section and 'else' section of <code>&lt;_needs&gt;</code> are exclusive,
+        and will never show at the same time.
+    </_else>
+</p>
+
+<h2>Error handling and invalid uses</h2>
+<p>DO NOT DO ANY OF THESE, even if they seem to work</p>
+<p>
+    You can make a 'needs' block with no permissions stated.
+    <_needs>
+    It will never show...  #### YOU SHOULD NOT SEE THIS ####
+    </_needs>
+    ...and it doesn't make much sense.
+</p>

@@ -1,0 +1,18 @@
+<h1>Bad Input</h1>
+<a href="app://home">Home</a>
+<p>
+    These are various tests to check the template engine can handle bad inputs.
+</p>
+<p>
+    It doesn't need to produce a meaningful page, it just shouldn't crash.
+</p>
+<hr/>
+<p>
+    If you specify a hole that does not exist in your model, it gets displayed <_>like_this</_>
+</p>
+<p>
+    If you specify a hole with no name, it calls <tt>.toString()</tt> on the model.
+    Sometimes that may make sense, but most of the time it looks like this: <_></_>
+</p>
+
+<hr/>

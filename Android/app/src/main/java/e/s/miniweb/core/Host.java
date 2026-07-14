@@ -5,7 +5,7 @@ package e.s.miniweb.core;
  * read the user's current page, and change page if required
  */
 @SuppressWarnings("unused")
-public interface RouterControls {
+public interface Host {
 
     /**
      * Get the page the user is currently viewing

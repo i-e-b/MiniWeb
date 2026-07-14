@@ -21,6 +21,8 @@ public static class ControllerBindings
     /// </summary>
     public static void BindAllControllers(){
         ControllerBinding.Use(new Home());
+        ControllerBinding.Use(new TestController());
+        ControllerBinding.Use(new ExamplesController());
         // Add more bindings here
     }
 

@@ -276,6 +276,9 @@ public class AppWebRouter extends WebViewClient {
         // We have enough permission. Run the method and fill in the template
         TemplateResponse tmpl = template.Run(controllerAction, params, request);
 
+        // Link in call-back target
+        JsCallbackManager.target = tmpl.CallbackTarget;
+
         // extract response
         String finalOutput = tmpl.ResponseBody;
         tmpl.ResponseBody = null;
@@ -310,6 +313,9 @@ public class AppWebRouter extends WebViewClient {
             sb.append("default-light.css");
         }
         sb.append("\" type=\"text/css\">");
+        sb.append("<script type=\"text/javascript\" src=\"asset://");
+        sb.append(App.str(R.string.path_scripts));
+        sb.append("common.js\"></script>");
 
         sb.append("</head><body>");
         sb.append(response);

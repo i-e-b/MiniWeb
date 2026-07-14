@@ -3,14 +3,17 @@ package e.s.miniweb.controllers;
 import android.os.Looper;
 import android.util.Log;
 
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
-import e.s.miniweb.JsCallbackManager;
+import e.s.miniweb.core.Host;
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.PageInteractions;
 import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
@@ -29,7 +32,7 @@ import e.s.miniweb.models.FullNameModel;
     It's not required to `extends ControllerBase`,
     but it is helpful.
  */
-public class TestController extends ControllerBase {
+public class TestController extends ControllerBase implements PageInteractions {
     /**
      * The constructor of your controller should bind all it's routes.
      * The constructor should be called in ControllerBindings::BindAllControllers()
@@ -45,7 +48,6 @@ public class TestController extends ControllerBase {
         ControllerBinding.BindMethod(controller, "paramsAndForms", this::paramsAndForms);
         ControllerBinding.BindMethod(controller, "paramsAndForms2", this::paramsAndForms2);
         ControllerBinding.BindMethod(controller, "paramsAndForms3", this::paramsAndForms3);
-        ControllerBinding.BindMethod(controller, "paramsAndForms4", this::paramsAndForms4);
         ControllerBinding.BindMethod(controller, "emoji", this::emoji);
         ControllerBinding.BindMethod(controller, "svg-embed", this::svgEmbed);
         ControllerBinding.BindMethod(controller, "emuHost", this::emulatorAndHostTests);
@@ -61,7 +63,7 @@ public class TestController extends ControllerBase {
 
     /**
      * In this method we handle both the GET and the (fake) POST. You
-     * can split them by setting an 'action' on the html form tag.
+     * can split them by setting an 'action' on the HTML form tag.
      */
     private TemplateResponse paramsAndForms(Map<String, String> params, ResourceRequest request) {
         if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
@@ -83,7 +85,7 @@ public class TestController extends ControllerBase {
             model.Name = params.containsKey("name") ? params.get("name") : "";
             model.Surname = params.containsKey("surname") ? params.get("surname") : "";
 
-            return Page("test/paramsAndForms1", model);
+            return Page("test/paramsAndForms1", this, model);
         }
     }
 
@@ -100,23 +102,8 @@ public class TestController extends ControllerBase {
             public final String Name = lastName;
             public final String Surname = lastSurname;
         };
-        return Page("test/paramsAndForms3", model);
+        return Page("test/paramsAndForms3", this, model);
     }
-
-    // this one gets the data from JavaScript
-    private TemplateResponse paramsAndForms4(Map<String, String> parameters, ResourceRequest request) {
-        Object model = new Object(){
-            public final String Name = JsCallbackManager.formData.get("demoForm");
-        };
-        if (Looper.getMainLooper().getThread() == Thread.currentThread()) {
-            // Current thread is the UI/Main thread
-            Log.e("Test", "Fault! Callback thread IS main loop!");
-        } else {
-            Log.w("Test", "Callback thread is not main loop");
-        }
-        return Page("test/paramsAndForms3", model);
-    }
-
 
     private TemplateResponse memInfo(Map<String, String> params, ResourceRequest request) {
         final Runtime runtime = Runtime.getRuntime();
@@ -129,7 +116,7 @@ public class TestController extends ControllerBase {
             public final long maxHeapSize = maxHeapSizeInMB;
             public final long availHeapSize = availHeapSizeInMB;
         };
-        return Page("test/memInfo", model);
+        return Page("test/memInfo", this, model);
     }
 
     private static int loadCount = 0;
@@ -144,7 +131,7 @@ public class TestController extends ControllerBase {
             public final String LoadCount = ""+loadCount;
         };
 
-        return Page("test/loadCountView", model);
+        return Page("test/loadCountView", this, model);
     }
 
     /**
@@ -159,7 +146,7 @@ public class TestController extends ControllerBase {
             public final boolean hotReloadOn = HotReloadMonitor.TryLoadFromHost;
         };
 
-        return Page("test/emuHost", model);
+        return Page("test/emuHost", this, model);
     }
 
     private static String getIsoDateNow(){
@@ -177,20 +164,20 @@ public class TestController extends ControllerBase {
      * Display a reference page full of emoji supported by Android
      */
     private TemplateResponse emoji(Map<String, String> params, ResourceRequest request) {
-        return Page("test/emoji", null);
+        return Page("test/emoji", this, null);
     }
 
 
     /** Show a globe, with a shield, and 'value' from params in that shield. */
     private TemplateResponse badgeAfrica(Map<String, String> params, ResourceRequest request) {
-        return Page("test/badge-africa", params);
+        return Page("test/badge-africa", this, params);
     }
 
     /**
      * Display a page that loads an `img` tag with SVG source
      */
     private TemplateResponse svgEmbed(Map<String, String> params, ResourceRequest request) {
-        return Page("test/svg-embed", null);
+        return Page("test/svg-embed", this, null);
     }
 
     /**
@@ -201,7 +188,7 @@ public class TestController extends ControllerBase {
     }
 
     private TemplateResponse badInput(Map<String, String> params, ResourceRequest request) {
-        return Page("test/badInput", new Object());
+        return Page("test/badInput", this, new Object());
     }
 
 
@@ -215,7 +202,7 @@ public class TestController extends ControllerBase {
         };
 
         // There is no requirement to have views and controllers line up BUT it is a good idea.
-        return Page("test/testOne", model);
+        return Page("test/testOne", this, model);
     }
 
     /**
@@ -226,12 +213,20 @@ public class TestController extends ControllerBase {
 
         if (parameters.containsKey("first")) {
             // There is no requirement to have views and controllers line up BUT it is a good idea.
-            return Page("test/testTwo", null);
+            return Page("test/testTwo", this, null);
         }
 
         return EndOfPath(); // redirect to home and clear 'back' history.
     }
 
 
+    @Override
+    public boolean HandlePageRequest(Host host, JSONObject message) {
+        return false;
+    }
 
+    @Override
+    public void PageClosed(Host host) {
+
+    }
 }

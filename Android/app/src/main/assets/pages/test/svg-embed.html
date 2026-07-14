@@ -1,0 +1,32 @@
+<h1>SVG images</h1>
+<a href="app://home">Home</a><br/>
+<img src="asset://images/example.svg" style="float:left;width:49vw;height:50vh;">
+<p>
+    SVG images are supported, and can be much smaller in the APK if
+    the graphic style suits vector graphics.
+</p>
+<p style="clear:both;width:49vw;">
+    Note that SVGs must have the <code>xmlns=&quot;http://www.w3.org/2000/svg&quot;</code> attribute on their root
+    element to work properly with <code>&lt;img src=&quot;...&quot;/&gt;</code> tags.
+</p>
+<p>
+    SVG images can also be embedded directly in the HTML page:<br/>
+    <svg height="210" width="210">
+        <polygon points="100,10 40,198 190,78 10,78 160,198" style="fill:#fe7;stroke:#a70;stroke-width:5;fill-rule:nonzero;"/>
+    </svg>
+    <br/>
+    Note that namespacing and XML headers are not required in this case.
+</p>
+<p>
+    You can also use SVG images in CSS definitions, including as background elements.
+    This allows you to build up multiple SVG bits into a larger graphic:
+</p>
+    <div class="globe-bg" style="width:128px;height:128px">
+        <div class="badge-bg" style="float:right;width:64px;height:64px">
+            <div class="light-bg-txt" style="padding-top:20px;text-align:center;width:60px;">58</div>
+        </div>
+    </div>
+<p>
+    Composite badges like this are a good use of partial views:
+    <_view url="app://test/badge-africa?value=🔧"></_view>
+</p>

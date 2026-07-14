@@ -28,14 +28,13 @@ import android.window.OnBackInvokedDispatcher;
 import java.io.ByteArrayOutputStream;
 import java.util.Set;
 
-import e.s.miniweb.JsCallbackManager;
 import e.s.miniweb.R;
 import e.s.miniweb.StartupActions;
 import e.s.miniweb.core.hotReload.AssetLoader;
 import e.s.miniweb.core.hotReload.EmulatorHostCall;
 import e.s.miniweb.core.hotReload.HotReloadMonitor;
 
-public class MainActivity extends Activity implements RouterControls {
+public class MainActivity extends Activity implements Host {
     private static final String TAG = "MainActivity";
     private WebView webView;
     private AppWebRouter webRouter;
@@ -64,7 +63,7 @@ public class MainActivity extends Activity implements RouterControls {
         // hook the view to the app client and request the home page
         if (loader == null) loader = new AssetLoader(getAssets());
         if (webRouter == null) webRouter = new AppWebRouter(loader, this); // <-- route definitions are in here
-        if (manager == null) manager = new JsCallbackManager(this); // <-- methods for js "manager.myFunc()" are in here
+        if (manager == null) manager = new JsCallbackManager(this, this); // <-- methods for js "manager.myFunc()" are in here
 
         // Hot-reload loop (with self terminate if not connected)
         if (backgroundHandler == null) {
@@ -81,7 +80,7 @@ public class MainActivity extends Activity implements RouterControls {
 
         // Activate the web-view with event handlers, and kick off the landing page.
         runOnUiThread(()->{
-            // setup the web view
+            // set up the web view
             webView = new WebView(this);
             webView.setVisibility(View.INVISIBLE); // Made visible after first page load. We do this to prevent a flash of blank page.
             this.setContentView(webView, new ViewGroup.LayoutParams(

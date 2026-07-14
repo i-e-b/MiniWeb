@@ -1,8 +1,8 @@
-﻿"use strict";
+"use strict";
 
 /** Call back to 'HandlePageRequest' in the source controller. 'message' is sent as a JSON object.  */
 function PageRequest(message){
-    window.chrome.webview.postMessage(message);
+    manager.postMessage(JSON.stringify(message));
 }
 
 const _base64 = [
@@ -93,7 +93,7 @@ function scanCamera(prefix) {
     // noinspection JSCheckFunctionSignatures
     const data = ctx.getImageData(0, 0, canvas.width, canvas.height, {pixelFormat:"rgba-unorm8"}).data;
     const test = toBase64(data);
-    PageRequest({
+    window.chrome.webview.postMessage({
         action: "camera", data: test,
         parameters: {target: prefix, width: canvas.width, height: canvas.height}
     });
@@ -192,7 +192,7 @@ function toastTimer(){
 setInterval(toastTimer, 1000);
 
 function onPrint(){
-    PageRequest({"action":"print"});
+    window.chrome.webview.postMessage({"action":"print"});
 }
 
 function centre(elem) {

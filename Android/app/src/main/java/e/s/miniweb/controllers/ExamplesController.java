@@ -1,5 +1,7 @@
 package e.s.miniweb.controllers;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,12 +9,14 @@ import java.util.Map;
 
 import e.s.miniweb.core.ControllerBase;
 import e.s.miniweb.core.ControllerBinding;
+import e.s.miniweb.core.Host;
+import e.s.miniweb.core.PageInteractions;
 import e.s.miniweb.core.ResourceRequest;
 import e.s.miniweb.core.template.TemplateResponse;
 import e.s.miniweb.models.NestedObjectModel;
 @SuppressWarnings("unused")
 
-public class ExamplesController extends ControllerBase {
+public class ExamplesController extends ControllerBase implements PageInteractions {
     public ExamplesController(){
         String controller = "examples";
 
@@ -29,16 +33,16 @@ public class ExamplesController extends ControllerBase {
     }
 
     private TemplateResponse isPermitted(Map<String, String> params, ResourceRequest request) {
-        return Page("examples/permitted-ok", null);
+        return Page("examples/permitted-ok", this, null);
     }
 
     // this controller-action will only run if the user has at least one of these permissions:
     private TemplateResponse notPermitted(Map<String, String> params, ResourceRequest request) {
-        return Page("examples/permitted-ok", null);
+        return Page("examples/permitted-ok", this, null);
     }
 
     private TemplateResponse urlPartialElementView(Map<String, String> params, ResourceRequest request) {
-        return Page("examples/element-view", params);
+        return Page("examples/element-view", this, params);
     }
 
     private TemplateResponse urlPartialView(Map<String, String> params, ResourceRequest request) {
@@ -47,7 +51,7 @@ public class ExamplesController extends ControllerBase {
             public final String text2 = params.containsKey("text2") ? params.get("text2") : null;
         };
 
-        return Page("examples/a-sub-view", model);
+        return Page("examples/a-sub-view", this, model);
     }
 
 
@@ -70,11 +74,11 @@ public class ExamplesController extends ControllerBase {
             public final Object subViewData = subViewObject;
         };
 
-        return Page("examples/partial-views", model);
+        return Page("examples/partial-views", this, model);
     }
 
     private TemplateResponse permissionVisibility(Map<String, String> params, ResourceRequest request) {
-        return Page("examples/permission-visibility", null);
+        return Page("examples/permission-visibility", this, null);
     }
 
     /**
@@ -110,7 +114,17 @@ public class ExamplesController extends ControllerBase {
             public final Map<String, NestedObjectModel> mapNest = sampleMapNest;
         };
 
-        return Page("examples/templating-examples", model);
+        return Page("examples/templating-examples", this, model);
+    }
+
+    @Override
+    public boolean HandlePageRequest(Host host, JSONObject message) {
+        return false;
+    }
+
+    @Override
+    public void PageClosed(Host host) {
+
     }
 
     // Internal classes used for view models

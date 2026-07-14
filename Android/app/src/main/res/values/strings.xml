@@ -9,9 +9,10 @@
     <string name="msg_err_404">Missing page</string>
 
     <!-- Paths for asset loading. Change these per language for multi-region support -->
-    <string name="path_views">views/</string>
+    <string name="path_pages">pages/</string>
     <string name="path_internal">internal/</string>
     <string name="path_styles">styles/</string>
+    <string name="path_scripts">scripts/</string>
 
     <!-- Paths for the Emulator Host (hot-reload tool) -->
     <string name="emu_host_load_path">assets/</string>

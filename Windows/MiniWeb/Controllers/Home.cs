@@ -18,7 +18,7 @@ public class Home : ControllerBase, IPageInteractions
 
     private TemplateResponse Index(Host host, Dictionary<string, string> parameters, ResourceRequest request)
     {
-        return Page("pages/home.html", null, this);
+        return Page("pages/home/index.html", null, this);
     }
 
     /// <inheritdoc />
