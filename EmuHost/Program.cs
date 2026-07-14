@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Reflection;
 using System.Text;
 using Tag;
 
@@ -22,11 +23,22 @@ internal static class Program
     {
         if (args is null || args.Length < 1)
         {
-            Console.WriteLine("Please specify the Android app \"assets\" folder to watch.");
-            return 1;
+            // Try to guess base path
+            _basePath = Assembly.GetExecutingAssembly().Location;
+
+            var offset = _basePath.LastIndexOf("EmuHost", StringComparison.Ordinal);
+            if (offset > 0)
+            {
+                _basePath = _basePath[..offset] + @"Android\app\src\main\assets";
+            }
+
+            Console.WriteLine("Guessing asset path: " + _basePath);
+        }
+        else
+        {
+            _basePath = string.Join(" ", args);
         }
 
-        _basePath = string.Join(" ", args);
         if (!Directory.Exists(_basePath))
         {
             Console.WriteLine($"Path at \"{_basePath}\" was not found, or could not be accessed (check permissions?)");

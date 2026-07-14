@@ -1,0 +1,26 @@
+﻿<Window x:Class="MiniWeb.SelfHostWebWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:wpf="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="MiniWeb"
+
+        Height="700" Width="1024"
+        MinHeight="480" MinWidth="640">
+    <Grid>
+        <Grid.Background>
+            <SolidColorBrush Color="Black" Opacity=".2"/>
+        </Grid.Background>
+
+
+        <StackPanel Panel.ZIndex="1" HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="600">
+            <TextBlock Name="MessageHeader" FontSize="50" TextWrapping="Wrap" Text="Loading..."/>
+            <TextBlock Name="MessageBody" FontSize="25" TextWrapping="Wrap" Text="Please wait"/>
+            <Button Name="DismissButton" FontSize="20" MaxWidth="150" Margin="25">OK</Button>
+        </StackPanel>
+
+        <wpf:WebView2 Panel.ZIndex="2" Name="Web"></wpf:WebView2>
+    </Grid>
+</Window>

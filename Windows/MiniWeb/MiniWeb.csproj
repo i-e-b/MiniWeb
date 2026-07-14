@@ -1,0 +1,55 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>WinExe</OutputType>
+        <TargetFramework>net10.0-windows</TargetFramework>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <LangVersion>latestmajor</LangVersion>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UseWPF>true</UseWPF>
+        <AssemblyName>MiniWeb</AssemblyName>
+        <RootNamespace>MiniWeb</RootNamespace>
+        <PackageId>MiniWeb</PackageId>
+        <Company>Template</Company>
+        <Product>MiniWeb</Product>
+        <ApplicationIcon>images\icon.ico</ApplicationIcon>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+        <DocumentationFile>bin\Debug\WpfTestApp.xml</DocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+        <DocumentationFile>bin\Release\WpfTestApp.xml</DocumentationFile>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
+        <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3967.48" />
+        <PackageReference Include="Microsoft.Web.WebView2.DevToolsProtocolExtension" Version="1.0.2901" />
+        <PackageReference Include="SkinnyJson" Version="3.1.8" />
+        <PackageReference Include="Sync" Version="1.0.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="images\*"/>
+        <EmbeddedResource Include="images\ewc_leds\*"/>
+        <EmbeddedResource Include="images\components\*"/>
+        <EmbeddedResource Include="video\*"/>
+        <EmbeddedResource Include="pages\*"/>
+        <EmbeddedResource Include="styles\*"/>
+        <EmbeddedResource Include="fragments\*"/>
+        <EmbeddedResource Include="internal\*"/>
+        <EmbeddedResource Include="scripts\*"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="video\" />
+    </ItemGroup>
+
+</Project>

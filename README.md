@@ -1,20 +1,22 @@
 # MiniWeb
-A small framework for building small android apps
+
+A small framework for building small Android and Windows apps apps
 
 ## What is it?
 
-A simple set of drivers for the built-in Android WebView that provides
+A simple set of drivers for the built-in Android WebView and Windows WebView2 that provide
 a web-like development environment contained in a single app.
 
-The app uses as much of the built-in Android system features as possible to result
-in a small final APK. The app plus example pages comes to around 50KB
+The app uses as much of the built-in system features as possible to result
+in a small final application package. The Android app plus example pages comes to around 50KB
 when built in release mode.
+
+MiniWeb does NOT try to be a complete development platform, or a write-once cross-platform environment.
+It does try to provide a customisable base for building fully-functional apps.
 
 ### Road-map
 
-- [ ] **Overlay** - Draw a new view over the current one. Clicking outside of the new view, or clicking 'back' reloads the original view without the overlay.
-- [ ] Implement something big (or at least non-trivial) in this. Add anything found to be missing
-- [ ] Hooks for 'wallet' service, hot code loading / live updates.
+- [ ] Hooks for hot code loading / live updates.
 - [ ] Action and progress controls -- template that replaces with a progress display and triggers a back-end task. Another replacement when task completes.
 
 ## How it works

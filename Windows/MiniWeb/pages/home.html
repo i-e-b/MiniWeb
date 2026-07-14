@@ -1,0 +1,69 @@
+<h1>🚧 Hello, world! 🚧</h1>
+<p>This is the home page for your MiniWeb app.
+
+    <small>
+        <_needs no-permissions-loaded>
+            <br/>Loading user permissions...
+        </_needs>
+        <_else>
+            👍
+        </_else>
+    </small>
+</p>
+
+<h4>Tour</h4>
+<ul>
+    <!-- links to Java code in the android app should start with app://
+         the first element in the path is the name of the controller, second is method.
+         Query params are passed to controller methods as a Map<string,string>.
+         Controller methods have access to the whole request if you need more.
+
+         If no method is given, it defaults to 'index'
+
+         See ControllerBindings.BindAllControllers to add new controllers and methods.
+         -->
+    <li style="list-style-type:none">Examples:</li>
+    <li><a href="app://examples/templating-examples">Templating</a></li>
+    <li><a href="app://examples/partial-views">Partial Views</a></li>
+    <li><a href="app://examples/permission-visibility">Permission Visibility</a></li>
+    <li><a href="app://test/paramsAndForms?name=Example&surname=McTester">Forms and parameters</a></li>
+    <li><a href="app://test/testTwo?first">Journey</a><br/></li>
+
+    <li style="list-style-type:none">&nbsp;</li>
+    <li style="list-style-type:none">Feature demos:</li>
+    <!-- We capture alert calls to show small confirmation messages - like 'Save' or 'Sent successfully'
+         Don't use this for messages that will block the user, like 'login failed'. Those should use the
+         `manager.showTitle()` call instead -->
+    <li><a href="javascript:alert('just a little hello')">Show alert</a> as toast message</li>
+
+    <!-- See core.JsCallbackManager for `showTitle` call -->
+    <li><a href="javascript:manager.showTitle('Important message!','#9D0F58')">Run Android code</a><br/>
+        (in this case, show a prominent message)</li>
+
+    <li style="list-style-type:none">&nbsp;</li>
+    <li style="list-style-type:none">Tests:</li>
+    <li><a href="app://test/emuHost">Host machine (emulator only)</a></li>
+    <li><a href="app://test/increment">Hot reload increment test</a></li>
+    <li><a href="app://test/memInfo">Memory use</a></li>
+
+    <li style="list-style-type:none">&nbsp;</li>
+    <li><a href="app://test/svg-embed">SVG image examples</a></li>
+    <li><a href="app://test/emoji">Emoji Ref</a></li>
+
+    <!-- MiniWeb provides 'asset://...' urls to directly use asset files.
+         This can be used for styles, images etc. -->
+    <li style="list-style-type:none">&nbsp;</li>
+    <li><a href="asset://styles/default.css">See default css file</a></li>
+    <li><a href="asset://images/img.png">See an image file</a></li>
+
+    <li style="list-style-type:none">&nbsp;</li>
+    <li><a href="app://test/bad-input">Bad Templates</a></li>
+    <li><a href="app://test/bad-method">Link to a page that crashes</a></li>
+    <li><a href="app://wrong/location">Link to a non existent controller</a></li>
+    <li><a href="app://test/missing-page">Link to a non existent page</a></li>
+    <li><a href="app://test/testOne">Back escape</a></li>
+</ul>
+
+<script type="text/javascript">
+    manager.clearHistory(); // this clears the 'back' list any time you hit the home page. Feel free to remove it
+</script>
