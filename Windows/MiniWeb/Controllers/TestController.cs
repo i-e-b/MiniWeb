@@ -10,18 +10,17 @@ public class TestController : ControllerBase, IPageInteractions
     /// <inheritdoc />
     public override void BindMethods(ControllerBinding bind)
     {
-        throw new NotImplementedException();
+
     }
 
     /// <inheritdoc />
-    public Task<bool> HandlePageRequest(Host host, string jsonStr)
+    public async Task<bool> HandlePageRequest(Host host, string jsonStr)
     {
-        throw new NotImplementedException();
+        return false;
     }
 
     /// <inheritdoc />
-    public Task PageClosed(Host host)
+    public async Task PageClosed(Host host)
     {
-        throw new NotImplementedException();
     }
 }

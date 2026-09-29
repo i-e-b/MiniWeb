@@ -16,6 +16,7 @@ It does try to provide a customisable base for building fully-functional apps.
 
 ### Road-map
 
+- [ ] Switch page-per-method (controllers) to page-per-class (keep class instance until page changes. Automap calls between JS and (C#/Java)?
 - [ ] Hooks for hot code loading / live updates.
 - [ ] Action and progress controls -- template that replaces with a progress display and triggers a back-end task. Another replacement when task completes.
 
